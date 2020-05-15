@@ -18,7 +18,7 @@ class DataInput implements InputInterface
     /**
      * @var string
      */
-    private string $sourceNodeColId;
+    private string $sourceNodeColumn;
 
     /**
      * DataInput constructor.
@@ -28,7 +28,7 @@ class DataInput implements InputInterface
     public function __construct(int $sourceNodeId, string $sourceNodeColId)
     {
         $this->sourceNodeId = $sourceNodeId;
-        $this->sourceNodeColId = $sourceNodeColId;
+        $this->sourceNodeColumn = $sourceNodeColId;
     }
 
     /**
@@ -42,8 +42,8 @@ class DataInput implements InputInterface
     /**
      * @return string
      */
-    public function getSourceNodeColId(): string
+    public function getSourceNodeColumn(): string
     {
-        return $this->sourceNodeColId;
+        return $this->sourceNodeColumn;
     }
 }

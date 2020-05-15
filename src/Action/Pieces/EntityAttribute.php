@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder;
+namespace Orderbynull\PgSqlBuilder\Action\Pieces;
 
 /**
  * Class EntityAttribute
