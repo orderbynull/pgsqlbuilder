@@ -28,7 +28,7 @@ class Summary
     /**
      * @var string
      */
-    private string $aggFuncName;
+    private ?string $aggFuncName;
 
     /**
      * @var string
@@ -40,10 +40,10 @@ class Summary
      * @param int $entityId
      * @param string $attributeId
      * @param bool $shouldGroup
-     * @param string $aggFuncName
+     * @param string|null $aggFuncName
      * @param string $attributeType
      */
-    public function __construct(int $entityId, string $attributeId, bool $shouldGroup, string $aggFuncName, string $attributeType)
+    public function __construct(int $entityId, string $attributeId, bool $shouldGroup, ?string $aggFuncName, string $attributeType)
     {
         $this->entityId = $entityId;
         $this->attributeId = $attributeId;
@@ -71,7 +71,7 @@ class Summary
     /**
      * @return bool
      */
-    public function shouldGroup(): bool
+    public function isShouldGroup(): bool
     {
         return $this->shouldGroup;
     }

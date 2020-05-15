@@ -95,7 +95,7 @@ class Select extends Action
         /** @var Join $join */
         foreach ($this->joins as $join) {
             $chunks[] = sprintf(
-                "JOIN entity_values AS _%d ON _%d.entity_id = %d AND (_%d.attributes->'%s'->>'value')::int = %s.id",
+                "JOIN entity_values AS _%d ON _%d.entity_id = %d AND (_%d.attributes->'%s'->>'value')::int = _%d.id",
                 $join->getJoinedEntityId(),
                 $join->getMasterEntityId(),
                 $join->getMasterEntityId(),
@@ -118,7 +118,7 @@ class Select extends Action
 
         /** @var Summary $summary */
         foreach ($this->summarization as $summary) {
-            if (!$summary->shouldGroup()) {
+            if (!$summary->isShouldGroup()) {
                 continue;
             }
 
