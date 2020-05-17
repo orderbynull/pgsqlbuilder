@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action;
+namespace Orderbynull\PgSqlBuilder\Action\Select;
 
+use Orderbynull\PgSqlBuilder\Action\AbstractAction;
 use Orderbynull\PgSqlBuilder\Action\Pieces\EntityAttribute;
-use Orderbynull\PgSqlBuilder\Action\Pieces\Join;
-use Orderbynull\PgSqlBuilder\Action\Pieces\Summary;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
@@ -17,7 +16,7 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
  * Class Select
  * @package Orderbynull\PgSqlBuilder
  */
-class Select extends Action
+class Select extends AbstractAction
 {
     /**
      * @var array
@@ -46,38 +45,30 @@ class Select extends Action
 
     /**
      * @param EntityAttribute $attribute
-     * @return $this
      */
-    public function addReturningAttribute(EntityAttribute $attribute): self
+    public function addReturningAttribute(EntityAttribute $attribute): void
     {
         $this->returningAttributes[] = $attribute;
-
-        return $this;
     }
 
     /**
      * @param Summary $summary
-     * @return $this
      */
-    public function addSummary(Summary $summary): self
+    public function addSummary(Summary $summary): void
     {
         $this->summarization[] = $summary;
 
-        !$this->groupingUsed && $this->groupingUsed = $summary->shouldGroup();
-        !$this->aggFunctionsUsed && $this->aggFunctionsUsed = !empty($summary->getAggFuncName());
-
-        return $this;
+        !$this->groupingUsed && $this->groupingUsed = $summary->shouldGroup;
+        !$this->aggFunctionsUsed && $this->aggFunctionsUsed = !empty($summary->aggFuncName);
     }
 
     /**
      * @param Join $join
-     * @return $this
+     * @return $this|void
      */
-    public function addJoin(Join $join): self
+    public function addJoin(Join $join): void
     {
         $this->joins[] = $join;
-
-        return $this;
     }
 
     /**
@@ -115,16 +106,16 @@ class Select extends Action
 
         /** @var EntityAttribute $attribute */
         foreach ($this->returningAttributes as $attribute) {
-            isset($timesSeen[$attribute->getAttributeId()]) ? $timesSeen[$attribute->getAttributeId()]++ : $timesSeen[$attribute->getAttributeId()] = 1;
+            isset($timesSeen[$attribute->attributeId]) ? $timesSeen[$attribute->attributeId]++ : $timesSeen[$attribute->attributeId] = 1;
 
-            $attributePath = Attribute::path($attribute->getEntityId(), $attribute->getAttributeId());
-            $attributeAlias = Attribute::placeholder($attribute->getEntityId(), $attribute->getAttributeId());
-            $attributeAlias = sprintf('%s_%d', $attributeAlias, $timesSeen[$attribute->getAttributeId()]);
+            $attributePath = Attribute::path($attribute->entityId, $attribute->attributeId);
+            $attributeAlias = Attribute::placeholder($attribute->entityId, $attribute->attributeId);
+            $attributeAlias = sprintf('%s_%d', $attributeAlias, $timesSeen[$attribute->attributeId]);
 
             [$attributeUsedInGrouping, $attributeAggFunction] = $this->attributeSummaryMeta(
-                $timesSeen[$attribute->getAttributeId()],
-                $attribute->getEntityId(),
-                $attribute->getAttributeId()
+                $timesSeen[$attribute->attributeId],
+                $attribute->entityId,
+                $attribute->attributeId
             );
 
             switch (true) {
@@ -133,26 +124,26 @@ class Select extends Action
                         throw new AttributeException(
                             sprintf(
                                 'Attribute %d.%s must be either used in grouping or have aggregate function',
-                                $attribute->getEntityId(),
-                                $attribute->getAttributeId()
+                                $attribute->entityId,
+                                $attribute->attributeId
                             )
                         );
                     }
                     $fieldsDenseRank = [];
                     /** @var Summary $summary */
                     foreach ($this->summarization as $summary) {
-                        if ($summary->shouldGroup() === true) {
+                        if ($summary->shouldGroup === true) {
                             $fieldsDenseRank[] = Type::cast(
-                                Attribute::path($summary->getEntityId(), $summary->getAttributeId()),
-                                $summary->getAttributeType()
+                                Attribute::path($summary->entityId, $summary->attributeId),
+                                $summary->attributeType
                             );
                         }
                     }
                     $chunks[0] = sprintf('dense_rank() over (order by %s) AS row_id', join(', ', $fieldsDenseRank));
                     if ($attributeAggFunction) {
-                        $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->getAttributeType()), $attributeAlias);
+                        $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
                     } else {
-                        $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->getAttributeType()), $attributeAlias);
+                        $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
                     }
                     break;
 
@@ -161,18 +152,18 @@ class Select extends Action
                         throw new AttributeException(
                             sprintf(
                                 'Aggregate function must be set for attribute %d.%s',
-                                $attribute->getEntityId(),
-                                $attribute->getAttributeId()
+                                $attribute->entityId,
+                                $attribute->attributeId
                             )
                         );
                     }
                     $chunks[0] = '1 AS row_id';
-                    $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->getAttributeType()), $attributeAlias);
+                    $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
                     break;
 
                 case !$this->groupingUsed && !$this->aggFunctionsUsed:
                     $chunks[0] = sprintf('_%s.id AS row_id', $this->baseEntityId);
-                    $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->getAttributeType()), $attributeAlias);
+                    $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
                     break;
             }
         }
@@ -192,8 +183,8 @@ class Select extends Action
 
         /** @var Summary $summary */
         foreach ($this->summarization as $summary) {
-            if ($summary->getEntityId() == $entityId && $summary->getAttributeId() == $attributeId) {
-                $data[] = [$summary->shouldGroup(), $summary->getAggFuncName() ?? null];
+            if ($summary->entityId == $entityId && $summary->attributeId == $attributeId) {
+                $data[] = [$summary->shouldGroup, $summary->aggFuncName ?? null];
             }
         }
 
@@ -215,12 +206,12 @@ class Select extends Action
         foreach ($this->joins as $join) {
             $chunks[] = sprintf(
                 "JOIN entity_values AS _%d ON _%d.entity_id = %d AND (_%d.attributes->'%s'->>'value')::int = _%d.id",
-                $join->getJoinedEntityId(),
-                $join->getMasterEntityId(),
-                $join->getMasterEntityId(),
-                $join->getMasterEntityId(),
-                $join->getJoinAttributeId(),
-                $join->getJoinedEntityId(),
+                $join->joinedEntityId,
+                $join->masterEntityId,
+                $join->masterEntityId,
+                $join->masterEntityId,
+                $join->joinAttributeId,
+                $join->joinedEntityId,
             );
         }
 
@@ -237,15 +228,15 @@ class Select extends Action
 
         /** @var Summary $summary */
         foreach ($this->summarization as $summary) {
-            if (!$summary->shouldGroup()) {
+            if (!$summary->shouldGroup) {
                 continue;
             }
 
             $chunks[] = Type::cast(
                 Attribute::path(
-                    $summary->getEntityId(), $summary->getAttributeId()
+                    $summary->entityId, $summary->attributeId
                 ),
-                $summary->getAttributeType()
+                $summary->attributeType
             );
         }
 

@@ -12,6 +12,16 @@ use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
  */
 class Type
 {
+    const FILE = 'file';
+    const ENUM = 'enum';
+    const TEXT = 'text';
+    const STRING = 'string';
+    const INTEGER = 'integer';
+    const DECIMAL = 'decimal';
+    const BOOLEAN = 'boolean';
+    const DATETIME = 'datetime';
+    const FOREIGN_KEY = 'foreign_key';
+
     /**
      * @param string $value
      * @param string $toType
@@ -21,24 +31,24 @@ class Type
     public static function cast(string $value, string $toType): string
     {
         switch ($toType) {
-            case 'file':
-            case 'enum':
-            case 'text':
-            case 'string':
-            case 'datetime':
+            case self::FILE:
+            case self::ENUM:
+            case self::TEXT:
+            case self::STRING:
+            case self::DATETIME:
                 return sprintf('(%s)::text', $value);
 
-            case 'integer':
-            case 'foreign_key':
+            case self::INTEGER:
+            case self::FOREIGN_KEY:
                 return sprintf('(%s)::int', $value);
 
-            case 'decimal':
+            case self::DECIMAL:
                 return sprintf('(%s)::decimal', $value);
 
-            case 'boolean':
+            case self::BOOLEAN:
                 return sprintf('(%s)::bool', $value);
         }
 
-        throw new TypeCastException(sprintf('Type casting to %s is not supported in %s', $toType, __METHOD__));
+        throw new TypeCastException(sprintf('Type casting to `%s` is not supported in %s', $toType, __METHOD__));
     }
 }

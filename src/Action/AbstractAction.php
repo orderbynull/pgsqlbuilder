@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Action;
 
-use Orderbynull\PgSqlBuilder\Action\Pieces\FiltrationRule;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\FiltrationException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
@@ -19,12 +18,28 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
  * Class Action
  * @package Orderbynull\PgSqlBuilder\Action
  */
-abstract class Action
+abstract class AbstractAction
 {
     /**
+     * Base entity for action.
+     *
      * @var int
      */
     protected int $baseEntityId;
+
+    /**
+     * Rules to apply to WHERE operator.
+     * Structure:
+     * [
+     *    [Condition, AND|OR, condition, ...],
+     *    AND|OR,
+     *    [Condition, AND|OR, condition, ...],
+     *    ...
+     * ]
+     *
+     * @var array
+     */
+    protected array $conditions = [];
 
     /**
      * @var array
@@ -32,11 +47,14 @@ abstract class Action
     protected array $groupOfRules = [];
 
     /**
-     * @var array
-     */
-    protected array $filtrationRules = [];
-
-    /**
+     * Holds an array of rowIds for each nodeId which data must be limited to these rowIds.
+     * It works like SELECT * FROM nodeId WHERE row_id IN(rowId, rowId, ...).
+     * Structure:
+     * [
+     *    nodeId::int => [rowId::int, ..., rowId::int],
+     *    ...
+     * ]
+     *
      * @var array
      */
     protected array $dataInputLimits = [];
@@ -53,13 +71,10 @@ abstract class Action
 
     /**
      * @param int $baseEntityId
-     * @return $this
      */
-    public function setBaseEntityId(int $baseEntityId): self
+    public function setBaseEntityId(int $baseEntityId): void
     {
         $this->baseEntityId = $baseEntityId;
-
-        return $this;
     }
 
     /**
@@ -72,88 +87,74 @@ abstract class Action
 
     /**
      * @param string|null $operator
-     * @return $this
      */
-    public function openFiltrationGroup(?string $operator = null): self
+    public function openConditionsGroup(?string $operator = null): void
     {
         if (empty($this->groupOfRules)) {
-            return $this;
+            return;
         }
 
-        $this->filtrationRules[] = $this->groupOfRules;
+        $this->conditions[] = $this->groupOfRules;
 
         if ($operator) {
-            $this->filtrationRules[] = $operator;
+            $this->conditions[] = $operator;
         }
 
         $this->groupOfRules = [];
-
-        return $this;
     }
 
-    /**
-     * @return $this
-     */
-    public function closeFiltrationGroup(): self
+    public function closeConditionsGroup(): void
     {
-        !empty($this->groupOfRules) && $this->filtrationRules[] = $this->groupOfRules;
-
-        return $this;
+        !empty($this->groupOfRules) && $this->conditions[] = $this->groupOfRules;
     }
 
     /**
+     * @param Condition $condition
      * @param string|null $operator
-     * @param FiltrationRule $rule
-     * @return $this
      * @throws FiltrationException
      */
-    public function addFiltrationRule(?string $operator, FiltrationRule $rule): self
+    public function addCondition(Condition $condition, ?string $operator = null): void
     {
         // AND/OR не может быть первым в группе условий
-        if ($operator && !end($this->groupOfRules) instanceof FiltrationRule) {
+        if ($operator && !end($this->groupOfRules) instanceof Condition) {
             throw new FiltrationException('AND\OR can be added after condition only');
         }
 
-        $operator && $this->groupOfRules[] = $operator;
+        if (!empty($operator)) {
+            $this->groupOfRules[] = $operator;
+        }
 
         // Правила фильтрации не могут идти подряд без разделения AND/OR
-        if (end($this->groupOfRules) instanceof FiltrationRule) {
+        if (end($this->groupOfRules) instanceof Condition) {
             throw new FiltrationException('Cannot join two conditions without AND\OR');
         }
 
-        $this->groupOfRules[] = $rule;
-
-        return $this;
+        $this->groupOfRules[] = $condition;
     }
 
     /**
      * @param int $entityId
      * @param string $attributeId
      * @param InputInterface $input
-     * @return $this
      */
-    public function setFiltrationAttributeValue(int $entityId, string $attributeId, InputInterface $input): self
+    public function setConditionsAttributeValue(int $entityId, string $attributeId, InputInterface $input): void
     {
+        $placeholder = Attribute::placeholder($entityId, $attributeId, true);
+
         if ($input instanceof UserInput) {
-            $placeholder = Attribute::placeholder($entityId, $attributeId);
-            $this->userInputBindings[$placeholder] = $input->getValue();
+            $this->userInputBindings[$placeholder] = $input->value;
         }
 
-        $this->filterAttributeValues[sprintf('%d.%s', $entityId, $attributeId)] = $input;
-
-        return $this;
+        $this->filterAttributeValues[$placeholder] = $input;
     }
 
     /**
      * @param int $nodeId
      * @param array $rowIds
-     * @return $this
      */
-    public function limitDataInputTo(int $nodeId, array $rowIds): self
+    public function limitDataInputTo(int $nodeId, array $rowIds): void
     {
         $this->dataInputLimits[$nodeId] = $rowIds;
-
-        return $this;
     }
 
     /**
@@ -163,6 +164,7 @@ abstract class Action
 
     /**
      * @return string
+     * @throws AttributeException
      * @throws InputTypeException
      * @throws TypeCastException
      */
@@ -170,19 +172,19 @@ abstract class Action
     {
         $chunks = [];
 
-        foreach ($this->filtrationRules as $value) {
+        foreach ($this->conditions as $value) {
             if (is_array($value)) {
                 $chunks[] = '(';
                 foreach ($value as $v) {
-                    if ($v instanceof FiltrationRule) {
+                    if ($v instanceof Condition) {
                         $chunks[] = sprintf(
                             "%s %s %s",
                             Type::cast(
-                                Attribute::path($v->getEntityId(), $v->getAttributeId()),
-                                $v->getAttributeType()
+                                Attribute::path($v->entityId, $v->attributeId),
+                                $v->attributeType
                             ),
-                            $v->getComprasionOperator(),
-                            $this->buildFiltrationInput($v)
+                            $v->comprasionOperator,
+                            $this->buildConditionInput($v)
                         );
                     } else {
                         $chunks[] = $v;
@@ -198,31 +200,33 @@ abstract class Action
     }
 
     /**
-     * @param FiltrationRule $rule
+     * @param Condition $condition
      * @return string
+     * @throws AttributeException
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    private function buildFiltrationInput(FiltrationRule $rule)
+    private function buildConditionInput(Condition $condition): string
     {
-        $key = sprintf('%d.%s', $rule->getEntityId(), $rule->getAttributeId());
-        if (empty($this->filterAttributeValues[$key])) {
+        $placeholder = Attribute::placeholder($condition->entityId, $condition->attributeId, true);
+
+        if (empty($this->filterAttributeValues[$placeholder])) {
             throw new AttributeException(
                 sprintf(
                     'Missing value for attribute `%d.%s` in %s',
-                    $rule->getEntityId(),
-                    $rule->getAttributeId(),
+                    $condition->entityId,
+                    $condition->attributeId,
                     __METHOD__
                 )
             );
         }
 
-        $input = $this->filterAttributeValues[$key];
+        $input = $this->filterAttributeValues[$placeholder];
 
         if ($input instanceof DataInput) {
             return sprintf(
                 'ANY(SELECT %s FROM node_%d %s)',
-                Type::cast($input->getSourceNodeColumn(), $rule->getAttributeType()),
+                Type::cast($input->getSourceNodeColumn(), $condition->attributeType),
                 $input->getSourceNodeId(),
                 isset($this->dataInputLimits[$input->getSourceNodeId()]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->getSourceNodeId()])) : ''
             );
@@ -230,8 +234,8 @@ abstract class Action
 
         if ($input instanceof UserInput) {
             return Type::cast(
-                Attribute::placeholder($rule->getEntityId(), $rule->getAttributeId(), true),
-                $rule->getAttributeType()
+                sprintf("'%s'", Attribute::placeholder($condition->entityId, $condition->attributeId, true)),
+                $condition->attributeType
             );
         }
 
