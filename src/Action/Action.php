@@ -11,7 +11,6 @@ use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
 use Orderbynull\PgSqlBuilder\Utils\Attribute;
-use Orderbynull\PgSqlBuilder\Utils\Placeholder;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
@@ -44,71 +43,6 @@ abstract class Action
      * @var array
      */
     protected array $userInputBindings = [];
-
-    /**
-     * @param FiltrationRule $rule
-     * @return string
-     * @throws InputTypeException
-     * @throws TypeCastException
-     */
-    private function buildInput(FiltrationRule $rule)
-    {
-        $input = $rule->getInputSource();
-
-        if ($input instanceof DataInput) {
-            return sprintf(
-                'ANY(SELECT %s FROM node_%d %s)',
-                Type::cast($input->getSourceNodeColumn(), $rule->getAttributeType()),
-                $input->getSourceNodeId(),
-                isset($this->dataInputLimits[$input->getSourceNodeId()]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->getSourceNodeId()])) : ''
-            );
-        }
-
-        if ($input instanceof UserInput) {
-            return Type::cast(
-                Placeholder::make($rule->getEntityId(), $rule->getAttributeId(), true),
-                $rule->getAttributeType()
-            );
-        }
-
-        throw new InputTypeException(sprintf('Unknown input source `%s`', get_class($rule->getInputSource())));
-    }
-
-    /**
-     * @return string
-     * @throws InputTypeException
-     * @throws TypeCastException
-     */
-    protected function buildWhere(): string
-    {
-        $chunks = [];
-
-        foreach ($this->filtrationRules as $value) {
-            if (is_array($value)) {
-                $chunks[] = '(';
-                foreach ($value as $v) {
-                    if ($v instanceof FiltrationRule) {
-                        $chunks[] = sprintf(
-                            "%s %s %s",
-                            Type::cast(
-                                Attribute::path($v->getEntityId(), $v->getAttributeId()),
-                                $v->getAttributeType()
-                            ),
-                            $v->getComprasionOperator(),
-                            $this->buildInput($v)
-                        );
-                    } else {
-                        $chunks[] = $v;
-                    }
-                }
-                $chunks[] = ')';
-            } else {
-                $chunks[] = $value;
-            }
-        }
-
-        return sizeof($chunks) ? sprintf('WHERE %s', join(' ', $chunks)) : '';
-    }
 
     /**
      * @param int $baseEntityId
@@ -183,7 +117,7 @@ abstract class Action
         $this->groupOfRules[] = $rule;
 
         if ($rule->getInputSource() instanceof UserInput) {
-            $placeholder = Placeholder::make($rule->getEntityId(), $rule->getAttributeId());
+            $placeholder = Attribute::placeholder($rule->getEntityId(), $rule->getAttributeId());
             $this->userInputBindings[$placeholder] = $rule->getInputSource()->getValue();
         }
 
@@ -206,4 +140,69 @@ abstract class Action
      * @return string
      */
     abstract public function getQuery(): string;
+
+    /**
+     * @return string
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
+    protected function buildWhere(): string
+    {
+        $chunks = [];
+
+        foreach ($this->filtrationRules as $value) {
+            if (is_array($value)) {
+                $chunks[] = '(';
+                foreach ($value as $v) {
+                    if ($v instanceof FiltrationRule) {
+                        $chunks[] = sprintf(
+                            "%s %s %s",
+                            Type::cast(
+                                Attribute::path($v->getEntityId(), $v->getAttributeId()),
+                                $v->getAttributeType()
+                            ),
+                            $v->getComprasionOperator(),
+                            $this->buildInput($v)
+                        );
+                    } else {
+                        $chunks[] = $v;
+                    }
+                }
+                $chunks[] = ')';
+            } else {
+                $chunks[] = $value;
+            }
+        }
+
+        return sizeof($chunks) ? sprintf('WHERE %s', join(' ', $chunks)) : '';
+    }
+
+    /**
+     * @param FiltrationRule $rule
+     * @return string
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
+    private function buildInput(FiltrationRule $rule)
+    {
+        $input = $rule->getInputSource();
+
+        if ($input instanceof DataInput) {
+            return sprintf(
+                'ANY(SELECT %s FROM node_%d %s)',
+                Type::cast($input->getSourceNodeColumn(), $rule->getAttributeType()),
+                $input->getSourceNodeId(),
+                isset($this->dataInputLimits[$input->getSourceNodeId()]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->getSourceNodeId()])) : ''
+            );
+        }
+
+        if ($input instanceof UserInput) {
+            return Type::cast(
+                Attribute::placeholder($rule->getEntityId(), $rule->getAttributeId(), true),
+                $rule->getAttributeType()
+            );
+        }
+
+        throw new InputTypeException(sprintf('Unknown input source `%s`', get_class($rule->getInputSource())));
+    }
 }

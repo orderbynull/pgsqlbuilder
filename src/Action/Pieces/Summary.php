@@ -26,7 +26,7 @@ class Summary
     private bool $shouldGroup;
 
     /**
-     * @var string
+     * @var string|null
      */
     private ?string $aggFuncName;
 
@@ -71,15 +71,15 @@ class Summary
     /**
      * @return bool
      */
-    public function isShouldGroup(): bool
+    public function shouldGroup(): bool
     {
         return $this->shouldGroup;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getAggFuncName(): string
+    public function getAggFuncName(): ?string
     {
         return $this->aggFuncName;
     }
