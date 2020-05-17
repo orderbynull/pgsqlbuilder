@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Action\Pieces;
 
-use Orderbynull\PgSqlBuilder\Input\InputInterface;
-
 /**
  * Class FiltrationGroup
  * @package Orderbynull\PgSqlBuilder
@@ -33,25 +31,18 @@ class FiltrationRule
     private string $comprasionOperator;
 
     /**
-     * @var InputInterface
-     */
-    private InputInterface $comprasionSource;
-
-    /**
      * FiltrationRule constructor.
      * @param int $entityId
      * @param string $attributeId
      * @param string $attributeType
      * @param string $comprasionOperator
-     * @param InputInterface $comprasionSource
      */
-    public function __construct(int $entityId, string $attributeId, string $attributeType, string $comprasionOperator, InputInterface $comprasionSource)
+    public function __construct(int $entityId, string $attributeId, string $attributeType, string $comprasionOperator)
     {
         $this->entityId = $entityId;
         $this->attributeId = $attributeId;
         $this->attributeType = $attributeType;
         $this->comprasionOperator = $comprasionOperator;
-        $this->comprasionSource = $comprasionSource;
     }
 
     /**
@@ -84,13 +75,5 @@ class FiltrationRule
     public function getComprasionOperator(): string
     {
         return $this->comprasionOperator;
-    }
-
-    /**
-     * @return InputInterface
-     */
-    public function getInputSource(): InputInterface
-    {
-        return $this->comprasionSource;
     }
 }

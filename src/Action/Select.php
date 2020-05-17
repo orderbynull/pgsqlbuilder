@@ -97,7 +97,6 @@ class Select extends Action
             $this->buildJoins(),
             $this->buildWhere(),
             $this->buildGroupBy(),
-            sprintf('ORDER BY _%d.id DESC', $this->baseEntityId),
             'LIMIT ALL'
         ]);
 

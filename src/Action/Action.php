@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Action;
 
 use Orderbynull\PgSqlBuilder\Action\Pieces\FiltrationRule;
+use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\FiltrationException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
+use Orderbynull\PgSqlBuilder\Input\InputInterface;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
 use Orderbynull\PgSqlBuilder\Utils\Attribute;
 use Orderbynull\PgSqlBuilder\Utils\Type;
@@ -43,6 +45,11 @@ abstract class Action
      * @var array
      */
     protected array $userInputBindings = [];
+
+    /**
+     * @var array
+     */
+    protected array $filterAttributeValues = [];
 
     /**
      * @param int $baseEntityId
@@ -116,10 +123,23 @@ abstract class Action
 
         $this->groupOfRules[] = $rule;
 
-        if ($rule->getInputSource() instanceof UserInput) {
-            $placeholder = Attribute::placeholder($rule->getEntityId(), $rule->getAttributeId());
-            $this->userInputBindings[$placeholder] = $rule->getInputSource()->getValue();
+        return $this;
+    }
+
+    /**
+     * @param int $entityId
+     * @param string $attributeId
+     * @param InputInterface $input
+     * @return $this
+     */
+    public function setFiltrationAttributeValue(int $entityId, string $attributeId, InputInterface $input): self
+    {
+        if ($input instanceof UserInput) {
+            $placeholder = Attribute::placeholder($entityId, $attributeId);
+            $this->userInputBindings[$placeholder] = $input->getValue();
         }
+
+        $this->filterAttributeValues[sprintf('%d.%s', $entityId, $attributeId)] = $input;
 
         return $this;
     }
@@ -162,7 +182,7 @@ abstract class Action
                                 $v->getAttributeType()
                             ),
                             $v->getComprasionOperator(),
-                            $this->buildInput($v)
+                            $this->buildFiltrationInput($v)
                         );
                     } else {
                         $chunks[] = $v;
@@ -183,9 +203,21 @@ abstract class Action
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    private function buildInput(FiltrationRule $rule)
+    private function buildFiltrationInput(FiltrationRule $rule)
     {
-        $input = $rule->getInputSource();
+        $key = sprintf('%d.%s', $rule->getEntityId(), $rule->getAttributeId());
+        if (empty($this->filterAttributeValues[$key])) {
+            throw new AttributeException(
+                sprintf(
+                    'Missing value for attribute `%d.%s` in %s',
+                    $rule->getEntityId(),
+                    $rule->getAttributeId(),
+                    __METHOD__
+                )
+            );
+        }
+
+        $input = $this->filterAttributeValues[$key];
 
         if ($input instanceof DataInput) {
             return sprintf(
@@ -203,6 +235,6 @@ abstract class Action
             );
         }
 
-        throw new InputTypeException(sprintf('Unknown input source `%s`', get_class($rule->getInputSource())));
+        throw new InputTypeException(sprintf('Unknown input source `%s`', get_class($input)));
     }
 }
