@@ -11,7 +11,6 @@ use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\InputInterface;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
-use Orderbynull\PgSqlBuilder\Utils\Attribute;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
@@ -70,9 +69,10 @@ abstract class AbstractAction
     protected array $filterAttributeValues = [];
 
     /**
+     * AbstractAction constructor.
      * @param int $baseEntityId
      */
-    public function setBaseEntityId(int $baseEntityId): void
+    public function __construct(int $baseEntityId)
     {
         $this->baseEntityId = $baseEntityId;
     }
@@ -133,19 +133,25 @@ abstract class AbstractAction
     }
 
     /**
-     * @param int $entityId
-     * @param string $attributeId
+     * @param EntityAttribute $attribute
      * @param InputInterface $input
      */
-    public function setConditionsAttributeValue(int $entityId, string $attributeId, InputInterface $input): void
+    public function setConditionsAttributeValue(EntityAttribute $attribute, InputInterface $input): void
     {
-        $placeholder = Attribute::placeholder($entityId, $attributeId, true);
-
         if ($input instanceof UserInput) {
-            $this->userInputBindings[$placeholder] = $input->value;
+            $this->registerUserInputAsBinding($attribute, $input);
         }
 
-        $this->filterAttributeValues[$placeholder] = $input;
+        $this->filterAttributeValues[$attribute->getPlaceholder(true)] = $input;
+    }
+
+    /**
+     * @param EntityAttribute $attribute
+     * @param UserInput $userInput
+     */
+    protected function registerUserInputAsBinding(EntityAttribute $attribute, UserInput $userInput): void
+    {
+        $this->userInputBindings[$attribute->getPlaceholder(true)] = $userInput->value;
     }
 
     /**
@@ -180,8 +186,8 @@ abstract class AbstractAction
                         $chunks[] = sprintf(
                             "%s %s %s",
                             Type::cast(
-                                Attribute::path($v->entityId, $v->attributeId),
-                                $v->attributeType
+                                $v->attribute->getPath(),
+                                $v->attribute->attributeType
                             ),
                             $v->comprasionOperator,
                             $this->buildConditionInput($v)
@@ -208,16 +214,11 @@ abstract class AbstractAction
      */
     private function buildConditionInput(Condition $condition): string
     {
-        $placeholder = Attribute::placeholder($condition->entityId, $condition->attributeId, true);
+        $placeholder = $condition->attribute->getPlaceholder(true);
 
         if (empty($this->filterAttributeValues[$placeholder])) {
             throw new AttributeException(
-                sprintf(
-                    'Missing value for attribute `%d.%s` in %s',
-                    $condition->entityId,
-                    $condition->attributeId,
-                    __METHOD__
-                )
+                sprintf('Missing value for attribute `%s` in %s', $condition->attribute, __METHOD__)
             );
         }
 
@@ -226,7 +227,7 @@ abstract class AbstractAction
         if ($input instanceof DataInput) {
             return sprintf(
                 'ANY(SELECT %s FROM node_%d %s)',
-                Type::cast($input->getSourceNodeColumn(), $condition->attributeType),
+                Type::cast($input->getSourceNodeColumn(), $condition->attribute->attributeType),
                 $input->getSourceNodeId(),
                 isset($this->dataInputLimits[$input->getSourceNodeId()]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->getSourceNodeId()])) : ''
             );
@@ -234,8 +235,8 @@ abstract class AbstractAction
 
         if ($input instanceof UserInput) {
             return Type::cast(
-                sprintf("'%s'", Attribute::placeholder($condition->entityId, $condition->attributeId, true)),
-                $condition->attributeType
+                sprintf("'%s'", $condition->attribute->getPlaceholder(true)),
+                $condition->attribute->attributeType
             );
         }
 

@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Action\Select;
 
 use Orderbynull\PgSqlBuilder\Action\AbstractAction;
-use Orderbynull\PgSqlBuilder\Action\Pieces\EntityAttribute;
+use Orderbynull\PgSqlBuilder\Action\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
-use Orderbynull\PgSqlBuilder\Utils\Attribute;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
@@ -108,8 +107,8 @@ class Select extends AbstractAction
         foreach ($this->returningAttributes as $attribute) {
             isset($timesSeen[$attribute->attributeId]) ? $timesSeen[$attribute->attributeId]++ : $timesSeen[$attribute->attributeId] = 1;
 
-            $attributePath = Attribute::path($attribute->entityId, $attribute->attributeId);
-            $attributeAlias = Attribute::placeholder($attribute->entityId, $attribute->attributeId);
+            $attributePath = $attribute->getPath();
+            $attributeAlias = $attribute->getPlaceholder();
             $attributeAlias = sprintf('%s_%d', $attributeAlias, $timesSeen[$attribute->attributeId]);
 
             [$attributeUsedInGrouping, $attributeAggFunction] = $this->attributeSummaryMeta(
@@ -134,8 +133,8 @@ class Select extends AbstractAction
                     foreach ($this->summarization as $summary) {
                         if ($summary->shouldGroup === true) {
                             $fieldsDenseRank[] = Type::cast(
-                                Attribute::path($summary->entityId, $summary->attributeId),
-                                $summary->attributeType
+                                $summary->attribute->getPath(),
+                                $summary->attribute->attributeType
                             );
                         }
                     }
@@ -183,7 +182,7 @@ class Select extends AbstractAction
 
         /** @var Summary $summary */
         foreach ($this->summarization as $summary) {
-            if ($summary->entityId == $entityId && $summary->attributeId == $attributeId) {
+            if ($summary->attribute->entityId == $entityId && $summary->attribute->attributeId == $attributeId) {
                 $data[] = [$summary->shouldGroup, $summary->aggFuncName ?? null];
             }
         }
@@ -233,10 +232,8 @@ class Select extends AbstractAction
             }
 
             $chunks[] = Type::cast(
-                Attribute::path(
-                    $summary->entityId, $summary->attributeId
-                ),
-                $summary->attributeType
+                $summary->attribute->getPath(),
+                $summary->attribute->attributeType
             );
         }
 

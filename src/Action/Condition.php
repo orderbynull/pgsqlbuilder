@@ -11,19 +11,9 @@ namespace Orderbynull\PgSqlBuilder\Action;
 class Condition
 {
     /**
-     * @var int
+     * @var EntityAttribute
      */
-    public int $entityId;
-
-    /**
-     * @var string
-     */
-    public string $attributeId;
-
-    /**
-     * @var string
-     */
-    public string $attributeType;
+    public EntityAttribute $attribute;
 
     /**
      * @var string
@@ -31,17 +21,13 @@ class Condition
     public string $comprasionOperator;
 
     /**
-     * FiltrationRule constructor.
-     * @param int $entityId
-     * @param string $attributeId
-     * @param string $attributeType
+     * Condition constructor.
+     * @param EntityAttribute $attribute
      * @param string $comprasionOperator
      */
-    public function __construct(int $entityId, string $attributeId, string $attributeType, string $comprasionOperator)
+    public function __construct(EntityAttribute $attribute, string $comprasionOperator)
     {
-        $this->entityId = $entityId;
-        $this->attributeId = $attributeId;
-        $this->attributeType = $attributeType;
+        $this->attribute = $attribute;
         $this->comprasionOperator = $comprasionOperator;
     }
 }

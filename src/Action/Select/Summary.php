@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Action\Select;
 
+use Orderbynull\PgSqlBuilder\Action\EntityAttribute;
+
 /**
  * Class Summary
  * @package Orderbynull\PgSqlBuilder\Action\Select
  */
 class Summary
 {
-    /**
-     * @var int
-     */
-    public int $entityId;
-
-    /**
-     * @var string
-     */
-    public string $attributeId;
-
     /**
      * @var bool
      */
@@ -31,24 +23,20 @@ class Summary
     public ?string $aggFuncName;
 
     /**
-     * @var string
+     * @var EntityAttribute
      */
-    public string $attributeType;
+    public EntityAttribute $attribute;
 
     /**
      * Summary constructor.
-     * @param int $entityId
-     * @param string $attributeId
      * @param bool $shouldGroup
      * @param string|null $aggFuncName
-     * @param string $attributeType
+     * @param EntityAttribute $attribute
      */
-    public function __construct(int $entityId, string $attributeId, bool $shouldGroup, ?string $aggFuncName, string $attributeType)
+    public function __construct(EntityAttribute $attribute, bool $shouldGroup, ?string $aggFuncName)
     {
-        $this->entityId = $entityId;
-        $this->attributeId = $attributeId;
-        $this->shouldGroup = $shouldGroup;
+        $this->attribute = $attribute;
         $this->aggFuncName = $aggFuncName;
-        $this->attributeType = $attributeType;
+        $this->shouldGroup = $shouldGroup;
     }
 }
