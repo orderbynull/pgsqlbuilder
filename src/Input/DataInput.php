@@ -13,12 +13,12 @@ class DataInput implements InputInterface
     /**
      * @var int
      */
-    private int $sourceNodeId;
+    public int $sourceNodeId;
 
     /**
      * @var string
      */
-    private string $sourceNodeColumn;
+    public string $sourceNodeColumn;
 
     /**
      * DataInput constructor.
@@ -29,21 +29,5 @@ class DataInput implements InputInterface
     {
         $this->sourceNodeId = $sourceNodeId;
         $this->sourceNodeColumn = $sourceNodeColId;
-    }
-
-    /**
-     * @return int
-     */
-    public function getSourceNodeId(): int
-    {
-        return $this->sourceNodeId;
-    }
-
-    /**
-     * @return string
-     */
-    public function getSourceNodeColumn(): string
-    {
-        return $this->sourceNodeColumn;
     }
 }

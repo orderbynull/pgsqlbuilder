@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action\Select;
-
-use Orderbynull\PgSqlBuilder\Action\EntityAttribute;
+namespace Orderbynull\PgSqlBuilder\Actions\Blocks;
 
 /**
  * Class Summary
- * @package Orderbynull\PgSqlBuilder\Action\Select
+ * @package Orderbynull\PgSqlBuilder\Actions\Blocks
  */
 class Summary
 {

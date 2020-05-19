@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action;
+namespace Orderbynull\PgSqlBuilder\Actions\Blocks;
 
 /**
  * Class Condition
- * @package Orderbynull\PgSqlBuilder\Action\Select
+ * @package Orderbynull\PgSqlBuilder\Actions\Blocks
  */
 class Condition
 {

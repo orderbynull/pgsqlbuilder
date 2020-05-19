@@ -2,21 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action\Select;
+namespace Orderbynull\PgSqlBuilder\Actions;
 
-use Orderbynull\PgSqlBuilder\Action\AbstractAction;
-use Orderbynull\PgSqlBuilder\Action\EntityAttribute;
+use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
+use Orderbynull\PgSqlBuilder\Actions\Blocks\Join;
+use Orderbynull\PgSqlBuilder\Actions\Blocks\Summary;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
+use Orderbynull\PgSqlBuilder\Traits\WhereAwareTrait;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
  * Class Select
- * @package Orderbynull\PgSqlBuilder
+ * @package Orderbynull\PgSqlBuilder\Actions
  */
 class Select extends AbstractAction
 {
+    use WhereAwareTrait;
+
     /**
      * @var array
      */
@@ -40,14 +44,14 @@ class Select extends AbstractAction
     /**
      * @var array
      */
-    private array $returningAttributes = [];
+    private array $attributesToSelect = [];
 
     /**
      * @param EntityAttribute $attribute
      */
-    public function addReturningAttribute(EntityAttribute $attribute): void
+    public function addAttributeToSelect(EntityAttribute $attribute): void
     {
-        $this->returningAttributes[] = $attribute;
+        $this->attributesToSelect[] = $attribute;
     }
 
     /**
@@ -104,7 +108,7 @@ class Select extends AbstractAction
         $timesSeen = [];
 
         /** @var EntityAttribute $attribute */
-        foreach ($this->returningAttributes as $attribute) {
+        foreach ($this->attributesToSelect as $attribute) {
             isset($timesSeen[$attribute->attributeId]) ? $timesSeen[$attribute->attributeId]++ : $timesSeen[$attribute->attributeId] = 1;
 
             $attributePath = $attribute->getPath();
@@ -238,5 +242,13 @@ class Select extends AbstractAction
         }
 
         return count($chunks) ? sprintf('GROUP BY %s', join(',', $chunks)) : '';
+    }
+
+    /**
+     * @return array
+     */
+    public function getUserInputBindings(): array
+    {
+        return $this->conditionsUserInputs;
     }
 }

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action;
+namespace Orderbynull\PgSqlBuilder\Traits;
 
+use Orderbynull\PgSqlBuilder\Actions\Blocks\Condition;
+use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\FiltrationException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
@@ -14,18 +16,11 @@ use Orderbynull\PgSqlBuilder\Input\UserInput;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
- * Class Action
- * @package Orderbynull\PgSqlBuilder\Action
+ * Trait WhereAwareTrait
+ * @package Orderbynull\PgSqlBuilder\Traits
  */
-abstract class AbstractAction
+trait WhereAwareTrait
 {
-    /**
-     * Base entity for action.
-     *
-     * @var int
-     */
-    protected int $baseEntityId;
-
     /**
      * Rules to apply to WHERE operator.
      * Structure:
@@ -38,51 +33,30 @@ abstract class AbstractAction
      *
      * @var array
      */
-    protected array $conditions = [];
+    private array $conditions = [];
 
     /**
      * @var array
      */
-    protected array $groupOfRules = [];
-
-    /**
-     * Holds an array of rowIds for each nodeId which data must be limited to these rowIds.
-     * It works like SELECT * FROM nodeId WHERE row_id IN(rowId, rowId, ...).
-     * Structure:
-     * [
-     *    nodeId::int => [rowId::int, ..., rowId::int],
-     *    ...
-     * ]
-     *
-     * @var array
-     */
-    protected array $dataInputLimits = [];
+    private array $groupOfRules = [];
 
     /**
      * @var array
      */
-    protected array $userInputBindings = [];
+    private array $attributesValues = [];
 
     /**
      * @var array
      */
-    protected array $filterAttributeValues = [];
+    protected array $conditionsUserInputs = [];
 
     /**
-     * AbstractAction constructor.
-     * @param int $baseEntityId
+     * @param EntityAttribute $attribute
+     * @param UserInput $userInput
      */
-    public function __construct(int $baseEntityId)
+    private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
-        $this->baseEntityId = $baseEntityId;
-    }
-
-    /**
-     * @return array
-     */
-    public function getQueryBindings(): array
-    {
-        return $this->userInputBindings;
+        $this->conditionsUserInputs[$attribute->getPlaceholder(true)] = $userInput->value;
     }
 
     /**
@@ -136,37 +110,14 @@ abstract class AbstractAction
      * @param EntityAttribute $attribute
      * @param InputInterface $input
      */
-    public function setConditionsAttributeValue(EntityAttribute $attribute, InputInterface $input): void
+    public function setConditionAttributeValue(EntityAttribute $attribute, InputInterface $input): void
     {
         if ($input instanceof UserInput) {
-            $this->registerUserInputAsBinding($attribute, $input);
+            $this->registerUserInput($attribute, $input);
         }
 
-        $this->filterAttributeValues[$attribute->getPlaceholder(true)] = $input;
+        $this->attributesValues[$attribute->getPlaceholder(true)] = $input;
     }
-
-    /**
-     * @param EntityAttribute $attribute
-     * @param UserInput $userInput
-     */
-    protected function registerUserInputAsBinding(EntityAttribute $attribute, UserInput $userInput): void
-    {
-        $this->userInputBindings[$attribute->getPlaceholder(true)] = $userInput->value;
-    }
-
-    /**
-     * @param int $nodeId
-     * @param array $rowIds
-     */
-    public function limitDataInputTo(int $nodeId, array $rowIds): void
-    {
-        $this->dataInputLimits[$nodeId] = $rowIds;
-    }
-
-    /**
-     * @return string
-     */
-    abstract public function getQuery(): string;
 
     /**
      * @return string
@@ -190,7 +141,7 @@ abstract class AbstractAction
                                 $v->attribute->attributeType
                             ),
                             $v->comprasionOperator,
-                            $this->buildConditionInput($v)
+                            $this->conditionToSql($v)
                         );
                     } else {
                         $chunks[] = $v;
@@ -212,24 +163,24 @@ abstract class AbstractAction
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    private function buildConditionInput(Condition $condition): string
+    private function conditionToSql(Condition $condition): string
     {
         $placeholder = $condition->attribute->getPlaceholder(true);
 
-        if (empty($this->filterAttributeValues[$placeholder])) {
+        if (empty($this->attributesValues[$placeholder])) {
             throw new AttributeException(
                 sprintf('Missing value for attribute `%s` in %s', $condition->attribute, __METHOD__)
             );
         }
 
-        $input = $this->filterAttributeValues[$placeholder];
+        $input = $this->attributesValues[$placeholder];
 
         if ($input instanceof DataInput) {
             return sprintf(
                 'ANY(SELECT %s FROM node_%d %s)',
-                Type::cast($input->getSourceNodeColumn(), $condition->attribute->attributeType),
-                $input->getSourceNodeId(),
-                isset($this->dataInputLimits[$input->getSourceNodeId()]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->getSourceNodeId()])) : ''
+                Type::cast($input->sourceNodeColumn, $condition->attribute->attributeType),
+                $input->sourceNodeId,
+                isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
             );
         }
 
@@ -240,6 +191,6 @@ abstract class AbstractAction
             );
         }
 
-        throw new InputTypeException(sprintf('Unknown input source `%s`', get_class($input)));
+        throw new InputTypeException(sprintf('Unknown input source `%s` in %s', get_class($input), __METHOD__));
     }
 }

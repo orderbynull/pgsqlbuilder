@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action\Select;
+namespace Orderbynull\PgSqlBuilder\Actions\Blocks;
 
 /**
  * Class Join
- * @package Orderbynull\PgSqlBuilder\Action\Select
+ * @package Orderbynull\PgSqlBuilder\Actions\Blocks
  */
 class Join
 {

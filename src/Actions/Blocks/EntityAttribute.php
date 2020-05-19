@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Orderbynull\PgSqlBuilder\Action;
+namespace Orderbynull\PgSqlBuilder\Actions\Blocks;
 
 /**
  * Class EntityAttribute
- * @package Orderbynull\PgSqlBuilder
+ * @package Orderbynull\PgSqlBuilder\Actions\Blocks
  */
 class EntityAttribute
 {
