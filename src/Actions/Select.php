@@ -171,6 +171,10 @@ class Select extends AbstractAction
             }
         }
 
+        if (empty($chunks)) {
+            $chunks[] = sprintf('_%d.id as row_id', $this->baseEntityId);
+        }
+
         return join(', ', $chunks);
     }
 

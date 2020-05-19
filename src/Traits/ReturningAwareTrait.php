@@ -28,10 +28,14 @@ trait ReturningAwareTrait
 
         /** @var EntityAttribute $attribute */
         foreach ($this->attributesToReturn as $attribute) {
-            $chunks[] = Type::cast($attribute->getPath(), $attribute->attributeType);
+            $chunks[] = sprintf(
+                '%s AS %s',
+                Type::cast($attribute->getPath(), $attribute->attributeType),
+                $attribute->getPlaceholder()
+            );
         }
 
-        return !empty($chunks) ? sprintf('RETURNING %s', join(',', $chunks)) : '';
+        return !empty($chunks) ? sprintf('RETURNING id AS row_id, %s', join(', ', $chunks)) : '';
     }
 
     /**
