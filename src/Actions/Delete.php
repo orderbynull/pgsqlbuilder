@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Actions;
 
+use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
 use Orderbynull\PgSqlBuilder\Traits\ReturningAwareTrait;
 use Orderbynull\PgSqlBuilder\Traits\WhereAwareTrait;
 
@@ -30,7 +31,7 @@ class Delete extends AbstractAction
      * @throws \Orderbynull\PgSqlBuilder\Exceptions\InputTypeException
      * @throws \Orderbynull\PgSqlBuilder\Exceptions\TypeCastException
      */
-    public function getQuery(): string
+    public function getSqlQuery(): string
     {
         $queryChunks = [
             'UPDATE',
@@ -42,5 +43,13 @@ class Delete extends AbstractAction
         ];
 
         return trim(join(' ', $queryChunks));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getResultColumnsMeta(): array
+    {
+        return [];
     }
 }

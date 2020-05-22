@@ -6,6 +6,7 @@ namespace Orderbynull\PgSqlBuilder\Actions;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Actions\Blocks\Join;
+use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
 use Orderbynull\PgSqlBuilder\Actions\Blocks\Summary;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
@@ -40,6 +41,11 @@ class Select extends AbstractAction
      * @var bool
      */
     private bool $aggFunctionsUsed = false;
+
+    /**
+     * @var ResultColumnMeta[]
+     */
+    private array $resultColumnsMeta = [];
 
     /**
      * @var array
@@ -80,7 +86,7 @@ class Select extends AbstractAction
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    public function getQuery(): string
+    public function getSqlQuery(): string
     {
         $chunks = array_filter([
             'SELECT',
@@ -145,8 +151,10 @@ class Select extends AbstractAction
                     $chunks[0] = sprintf('dense_rank() over (order by %s) AS row_id', join(', ', $fieldsDenseRank));
                     if ($attributeAggFunction) {
                         $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                        $this->resultColumnsMeta[] = new ResultColumnMeta($attributeAlias, $attribute, $attributeAggFunction);
                     } else {
                         $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                        $this->resultColumnsMeta[] = new ResultColumnMeta($attributeAlias, $attribute);
                     }
                     break;
 
@@ -162,11 +170,13 @@ class Select extends AbstractAction
                     }
                     $chunks[0] = '1 AS row_id';
                     $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                    $this->resultColumnsMeta[] = new ResultColumnMeta($attributeAlias, $attribute, $attributeAggFunction);
                     break;
 
                 case !$this->groupingUsed && !$this->aggFunctionsUsed:
                     $chunks[0] = sprintf('_%s.id AS row_id', $this->baseEntityId);
                     $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                    $this->resultColumnsMeta[] = new ResultColumnMeta($attributeAlias, $attribute);
                     break;
             }
         }
@@ -249,10 +259,18 @@ class Select extends AbstractAction
     }
 
     /**
-     * @return array
+     * @inheritDoc
      */
     public function getUserInputBindings(): array
     {
         return $this->conditionsUserInputs;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getResultColumnsMeta(): array
+    {
+        return $this->resultColumnsMeta;
     }
 }

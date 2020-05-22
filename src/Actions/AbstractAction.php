@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Actions;
 
+use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
+
 /**
  * Class AbstractAction
  * @package Orderbynull\PgSqlBuilder\Actions
@@ -51,10 +53,15 @@ abstract class AbstractAction
     /**
      * @return string
      */
-    abstract public function getQuery(): string;
+    abstract public function getSqlQuery(): string;
 
     /**
      * @return array
      */
     abstract public function getUserInputBindings(): array;
+
+    /**
+     * @return ResultColumnMeta[]
+     */
+    abstract public function getResultColumnsMeta(): array;
 }

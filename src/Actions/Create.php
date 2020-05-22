@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Actions;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
+use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\InputInterface;
@@ -75,7 +76,7 @@ class Create extends AbstractAction
      * @throws InputTypeException
      * @throws \Orderbynull\PgSqlBuilder\Exceptions\TypeCastException
      */
-    public function getQuery(): string
+    public function getSqlQuery(): string
     {
         $buildObjectChunks = [];
 
@@ -117,4 +118,14 @@ class Create extends AbstractAction
 
         return join(' ', $queryChunks);
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getResultColumnsMeta(): array
+    {
+        return [];
+    }
+
+
 }
