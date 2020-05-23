@@ -38,7 +38,7 @@ class Delete extends AbstractAction
             sprintf('entity_values AS _%d', $this->baseEntityId),
             'SET',
             'deleted_at = NOW()',
-            $this->buildWhere(),
+            $this->buildWhere($this->baseEntityId),
             $this->buildReturning()
         ];
 

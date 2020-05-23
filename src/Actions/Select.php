@@ -92,10 +92,9 @@ class Select extends AbstractAction
             'SELECT',
             $this->buildFields(),
             'FROM',
-            'entity_values',
-            sprintf('AS _%d', $this->baseEntityId),
+            sprintf('entity_values AS _%d', $this->baseEntityId),
             $this->buildJoins(),
-            $this->buildWhere(),
+            $this->buildWhere($this->baseEntityId),
             $this->buildGroupBy(),
             'LIMIT ALL'
         ]);

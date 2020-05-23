@@ -120,12 +120,13 @@ trait WhereAwareTrait
     }
 
     /**
+     * @param int $baseEntityId
      * @return string
      * @throws AttributeException
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    protected function buildWhere(): string
+    protected function buildWhere(int $baseEntityId): string
     {
         $chunks = [];
 
@@ -153,7 +154,7 @@ trait WhereAwareTrait
             }
         }
 
-        return sizeof($chunks) ? sprintf('WHERE %s', join(' ', $chunks)) : '';
+        return sprintf('WHERE _%d.entity_id = %d AND (%s)', $baseEntityId, $baseEntityId, join(' ', $chunks));
     }
 
     /**
