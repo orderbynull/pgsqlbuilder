@@ -26,6 +26,20 @@ class Update extends Select
     private array $attributesToUpdate = [];
 
     /**
+     * @var array
+     */
+    private array $attributesValuesUserInputs = [];
+
+    /**
+     * @param EntityAttribute $attribute
+     * @param UserInput $userInput
+     */
+    private function registerAttributeValueUserInput(EntityAttribute $attribute, UserInput $userInput): void
+    {
+        $this->attributesValuesUserInputs[$attribute->getPlaceholder(true, '_av')] = $userInput->value;
+    }
+
+    /**
      * @param EntityAttribute $attribute
      * @param InputInterface $input
      */
@@ -50,14 +64,22 @@ class Update extends Select
 
             switch (true) {
                 case $input instanceof UserInput:
+                    $this->registerAttributeValueUserInput($attribute, $input);
+
                     $objectsChunks[] = sprintf(
                         "jsonb_build_object('%s', jsonb_build_object('value', %s))",
                         $attribute->attributeId,
-                        Type::cast('\'' . $attribute->getPlaceholder(true) . '\'', $attribute->attributeType)
+                        Type::cast('\'' . $attribute->getPlaceholder(true, '_av') . '\'', $attribute->attributeType)
                     );
                     break;
                 case $input instanceof DataInput:
-                    $objectsChunks[] = sprintf("jsonb_build_object('%s', jsonb_build_object('value', 'x'))", $attribute->attributeId);
+                    $objectsChunks[] = sprintf(
+                        "jsonb_build_object('%s', jsonb_build_object('value', (SELECT %s FROM node_%d %s ORDER BY row_id DESC LIMIT 1)))",
+                        $attribute->attributeId,
+                        Type::cast($input->sourceNodeColumn, $attribute->attributeType),
+                        $input->sourceNodeId,
+                        isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
+                    );
                     break;
                 default:
                     throw new InputTypeException(sprintf('Unknown input source `%s` in %s', get_class($input), __METHOD__));
@@ -87,6 +109,6 @@ class Update extends Select
      */
     public function getUserInputBindings(): array
     {
-        return [];
+        return array_merge(parent::getUserInputBindings(), $this->attributesValuesUserInputs);
     }
 }

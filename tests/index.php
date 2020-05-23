@@ -28,7 +28,7 @@ $select->addSummary(new Summary($attr2, true, null));
 $select->setConditionAttributeValue($attr1, new UserInput(63));
 $select->setConditionAttributeValue($attr2, new DataInput(10, 'c1'));
 $select->limitDataInputTo(10, [1, 2, 3]);
-var_dump($select->getSqlQuery(), $select->getUserInputBindings(), $select->getResultColumnsMeta());
+//var_dump($select->getSqlQuery(), $select->getUserInputBindings(), $select->getResultColumnsMeta());
 
 
 $create = new Create(17);
@@ -51,8 +51,14 @@ $delete->addAttributeToReturn($attr2);
 //var_dump($delete->getQuery(), $delete->getUserInputBindings());
 
 $update = new Update(71);
-$update->setAttributeToUpdate($attr1, new UserInput(63));
+$update->setAttributeToUpdate($attr1, new UserInput(634));
 $update->setAttributeToUpdate($attr2, new DataInput(2, 'col1'));
 $update->addAttributeToReturn($attr1);
 $update->addAttributeToReturn($attr2);
-//var_dump($update->getQuery(), $update->getUserInputBindings());
+$update->openConditionsGroup();
+$update->addCondition(new Condition($attr1, '='));
+$update->addCondition(new Condition($attr2, '='), 'AND');
+$update->closeConditionsGroup();
+$update->setConditionAttributeValue($attr1, new UserInput(631));
+$update->setConditionAttributeValue($attr2, new DataInput(10, 'c1'));
+var_dump($update->getSqlQuery(), $update->getUserInputBindings());

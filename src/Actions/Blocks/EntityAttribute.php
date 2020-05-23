@@ -56,11 +56,12 @@ class EntityAttribute
 
     /**
      * @param bool $addColon
+     * @param string $suffix
      * @return string
      */
-    public function getPlaceholder(bool $addColon = false): string
+    public function getPlaceholder(bool $addColon = false, string $suffix = ''): string
     {
-        $placeholder = sprintf('%sent_%d_attr_%s', $addColon ? ':' : '', $this->entityId, $this->attributeId);
+        $placeholder = sprintf('%sent_%d_attr_%s%s', $addColon ? ':' : '', $this->entityId, $this->attributeId, $suffix);
         return str_replace('-', '_', $placeholder);
     }
 }

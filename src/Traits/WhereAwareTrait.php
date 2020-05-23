@@ -54,9 +54,9 @@ trait WhereAwareTrait
      * @param EntityAttribute $attribute
      * @param UserInput $userInput
      */
-    private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
+    private function registerConditionsUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
-        $this->conditionsUserInputs[$attribute->getPlaceholder(true)] = $userInput->value;
+        $this->conditionsUserInputs[$attribute->getPlaceholder(true, '_cond')] = $userInput->value;
     }
 
     /**
@@ -113,10 +113,10 @@ trait WhereAwareTrait
     public function setConditionAttributeValue(EntityAttribute $attribute, InputInterface $input): void
     {
         if ($input instanceof UserInput) {
-            $this->registerUserInput($attribute, $input);
+            $this->registerConditionsUserInput($attribute, $input);
         }
 
-        $this->attributesValues[$attribute->getPlaceholder(true)] = $input;
+        $this->attributesValues[$attribute->getPlaceholder(true, '_cond')] = $input;
     }
 
     /**
@@ -170,7 +170,7 @@ trait WhereAwareTrait
      */
     private function conditionToSql(Condition $condition): string
     {
-        $placeholder = $condition->attribute->getPlaceholder(true);
+        $placeholder = $condition->attribute->getPlaceholder(true, '_cond');
 
         if (empty($this->attributesValues[$placeholder])) {
             throw new AttributeException(
@@ -191,7 +191,7 @@ trait WhereAwareTrait
 
         if ($input instanceof UserInput) {
             return Type::cast(
-                sprintf("'%s'", $condition->attribute->getPlaceholder(true)),
+                sprintf("'%s'", $condition->attribute->getPlaceholder(true, '_cond')),
                 $condition->attribute->attributeType
             );
         }
