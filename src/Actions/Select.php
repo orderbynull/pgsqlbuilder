@@ -221,7 +221,7 @@ class Select extends AbstractAction
         /** @var Join $join */
         foreach ($this->joins as $join) {
             $chunks[] = sprintf(
-                "JOIN entity_values AS _%d ON _%d.entity_id = %d AND (_%d.attributes->'%s'->>'value')::int = _%d.id",
+                "LEFT JOIN entity_values AS _%d ON _%d.entity_id = %d AND (_%d.attributes->'%s'->>'value')::int = _%d.id",
                 $join->joinedEntityId,
                 $join->masterEntityId,
                 $join->masterEntityId,
