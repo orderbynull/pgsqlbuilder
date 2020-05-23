@@ -154,7 +154,11 @@ trait WhereAwareTrait
             }
         }
 
-        return sprintf('WHERE _%d.entity_id = %d AND (%s)', $baseEntityId, $baseEntityId, join(' ', $chunks));
+        if (count($chunks)) {
+            return sprintf('WHERE _%d.entity_id = %d AND (%s)', $baseEntityId, $baseEntityId, join(' ', $chunks));
+        }
+
+        return sprintf('WHERE _%d.entity_id = %d', $baseEntityId, $baseEntityId);
     }
 
     /**
