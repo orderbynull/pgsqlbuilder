@@ -182,7 +182,7 @@ trait WhereAwareTrait
 
         if ($input instanceof DataInput) {
             return sprintf(
-                'ANY(SELECT %s FROM node_%d %s)',
+                'ANY(SELECT %s FROM data_input.node_%d %s)',
                 Type::cast($input->sourceNodeColumn, $condition->attribute->attributeType),
                 $input->sourceNodeId,
                 isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''

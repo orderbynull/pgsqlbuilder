@@ -74,7 +74,7 @@ class Update extends Select
                     break;
                 case $input instanceof DataInput:
                     $objectsChunks[] = sprintf(
-                        "jsonb_build_object('%s', jsonb_build_object('value', (SELECT %s FROM node_%d %s ORDER BY row_id DESC LIMIT 1)))",
+                        "jsonb_build_object('%s', jsonb_build_object('value', (SELECT %s FROM data_input.node_%d %s ORDER BY row_id DESC LIMIT 1)))",
                         $attribute->attributeId,
                         Type::cast($input->sourceNodeColumn, $attribute->attributeType),
                         $input->sourceNodeId,
