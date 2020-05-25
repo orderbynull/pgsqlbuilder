@@ -35,7 +35,7 @@ trait ReturningAwareTrait
             );
         }
 
-        return !empty($chunks) ? sprintf('  id AS row_id, %s', join(', ', $chunks)) : '';
+        return !empty($chunks) ? sprintf('id AS row_id, %s', join(', ', $chunks)) : '';
     }
 
     /**

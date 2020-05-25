@@ -55,6 +55,7 @@ $update->setAttributeToUpdate($attr1, new UserInput(634));
 $update->setAttributeToUpdate($attr2, new DataInput(2, 'col1'));
 $update->addAttributeToReturn($attr1);
 $update->addAttributeToReturn($attr2);
+$update->addAttributeToSelect($attr1);
 $update->openConditionsGroup();
 $update->addCondition(new Condition($attr1, '='));
 $update->addCondition(new Condition($attr2, '='), 'AND');

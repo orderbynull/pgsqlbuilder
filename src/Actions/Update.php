@@ -105,7 +105,7 @@ class Update extends Select
             'WITH source AS (%s), update AS (%s) SELECT %s FROM entity_values AS _%d WHERE id IN (SELECT id FROM update)',
             $selectQuery,
             $updateQuery,
-            $this->buildReturning(),
+            $this->buildFields(),
             $this->baseEntityId
         );
     }

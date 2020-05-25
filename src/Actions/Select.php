@@ -107,7 +107,7 @@ class Select extends AbstractAction
      * @throws AttributeException
      * @throws TypeCastException
      */
-    private function buildFields(): string
+    protected function buildFields(): string
     {
         $chunks = [];
         $timesSeen = [];
