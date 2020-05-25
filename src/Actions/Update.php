@@ -94,15 +94,15 @@ class Update extends Select
             'attributes = attributes ||',
             join(' || ', $objectsChunks),
             'WHERE',
-            sprintf('_%d.id IN(SELECT row_id FROM source)', $this->baseEntityId),
-            'RETURNING id'
+            sprintf('_%d.id IN(SELECT row_id FROM rows_to_update)', $this->baseEntityId),
+            'RETURNING *'
         ];
 
         $selectQuery = parent::getSqlQuery();
         $updateQuery = join(' ', $queryChunks);
 
         return sprintf(
-            'WITH source AS (%s), update AS (%s) SELECT %s FROM entity_values AS _%d WHERE id IN (SELECT id FROM update)',
+            'WITH rows_to_update AS (%s), updated_rows AS (%s) SELECT %s FROM updated_rows AS _%d',
             $selectQuery,
             $updateQuery,
             $this->buildReturning(),
