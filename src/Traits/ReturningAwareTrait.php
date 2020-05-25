@@ -29,7 +29,7 @@ trait ReturningAwareTrait
         /** @var EntityAttribute $attribute */
         foreach ($this->attributesToReturn as $attribute) {
             $chunks[] = sprintf(
-                '%s AS %s',
+                '%s AS %s_1',
                 Type::cast($attribute->getPath(), $attribute->attributeType),
                 $attribute->getPlaceholder()
             );
