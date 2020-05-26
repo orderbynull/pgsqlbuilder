@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Actions;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
+use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
+use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\InputInterface;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
-use Orderbynull\PgSqlBuilder\Traits\ReturningAwareTrait;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
@@ -18,8 +19,6 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
  */
 class Update extends Select
 {
-    use ReturningAwareTrait;
-
     /**
      * @var array
      */
@@ -50,9 +49,9 @@ class Update extends Select
 
     /**
      * @return string
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\AttributeException
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\InputTypeException
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\TypeCastException
+     * @throws AttributeException
+     * @throws InputTypeException
+     * @throws TypeCastException
      */
     public function getSqlQuery(): string
     {

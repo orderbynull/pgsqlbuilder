@@ -37,4 +37,12 @@ class ResultColumnMeta
         $this->attribute = $attribute;
         $this->aggFunction = $aggFunction;
     }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return sprintf('%s_%s_%s', $this->columnId, (string)$this->attribute, $this->aggFunction ?? '');
+    }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Actions;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
-use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\InputInterface;
@@ -27,9 +26,9 @@ class Create extends AbstractAction
     private array $userInputs = [];
 
     /**
-     * @var int
+     * @var DataInput|null
      */
-    private ?int $dataInputNodeId = null;
+    private ?DataInput $dataInput = null;
 
     /**
      * @var array
@@ -54,15 +53,33 @@ class Create extends AbstractAction
     }
 
     /**
+     * @param DataInput|null $dataInput
+     */
+    public function setDataInput(?DataInput $dataInput): void
+    {
+        $this->dataInput = $dataInput;
+    }
+
+    /**
      * @param EntityAttribute $entityAttribute
      * @param InputInterface $input
+     * @throws InputTypeException
      */
     public function setAttributeValue(EntityAttribute $entityAttribute, InputInterface $input): void
     {
         switch (true) {
             case $input instanceof DataInput:
+                if (empty($this->dataInput)) {
+                    $this->dataInput = $input;
+                } else if($input->sourceNodeId != $this->dataInput->sourceNodeId) {
+                    throw new InputTypeException(
+                        sprintf(
+                            'Create action can have only one input data and it\'s already set to sourceNodeId=%d',
+                            $this->dataInput->sourceNodeId
+                        )
+                    );
+                }
                 $this->attributesValues[] = [$entityAttribute, $input];
-                $this->dataInputNodeId = $input->sourceNodeId;
                 break;
             case $input instanceof UserInput:
                 $this->attributesValues[] = [$entityAttribute, $input];
@@ -112,11 +129,18 @@ class Create extends AbstractAction
             sprintf('%s,', join('||', $buildObjectChunks)),
             'NOW(),',
             'NOW()',
-            !empty($this->dataInputNodeId) ? sprintf('FROM node_%d', $this->dataInputNodeId) : '',
-            $this->buildReturning()
+            !empty($this->dataInput) ? sprintf('FROM data_input.node_%d', $this->dataInput->sourceNodeId) : '',
+            'RETURNING *'
         ];
 
-        return join(' ', $queryChunks);
+        $insertQuery = join(' ', $queryChunks);
+
+        return sprintf(
+            'WITH rows_inserted AS (%s) SELECT %s FROM rows_inserted AS _%d',
+            $insertQuery,
+            $this->buildReturning(),
+            $this->baseEntityId
+        );
     }
 
     /**
@@ -124,8 +148,6 @@ class Create extends AbstractAction
      */
     public function getResultColumnsMeta(): array
     {
-        return [];
+        return $this->getReturningColumnsMeta();
     }
-
-
 }
