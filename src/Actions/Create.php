@@ -42,7 +42,7 @@ class Create extends AbstractAction
     private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
         if (is_array($userInput->value)) {
-            $userInput->value = sprintf("'%s'", implode('","', $userInput->value));
+            $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
         }
 
         $this->userInputs[$attribute->getPlaceholder(true)] = $userInput->value;
