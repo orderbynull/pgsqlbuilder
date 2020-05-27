@@ -113,10 +113,18 @@ class Create extends AbstractAction
                     );
                     break;
                 case $input instanceof UserInput:
-                    $objectValue = Type::cast(
-                        sprintf("'%s'", $entityAttribute->getPlaceholder(true)),
-                        $entityAttribute->attributeType
-                    );
+                    if ($entityAttribute->attributeType === Type::ENUM) {
+                        $objectValue = Type::cast(
+                            sprintf("'[%s]'", $entityAttribute->getPlaceholder(true)),
+                            $entityAttribute->attributeType
+                        );
+                    } else {
+                        $objectValue = Type::cast(
+                            sprintf("'%s'", $entityAttribute->getPlaceholder(true)),
+                            $entityAttribute->attributeType
+                        );
+                    }
+
                     break;
                 default:
                     throw new InputTypeException(sprintf('Unknown input source `%s` in %s', get_class($input), __METHOD__));
