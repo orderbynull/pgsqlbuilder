@@ -42,7 +42,7 @@ class Create extends AbstractAction
     private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
         if (is_array($userInput->value)) {
-            $userInput->value = join(',', $userInput->value);
+            $userInput->value = sprintf("'%s'", implode('","', $userInput->value));
         }
 
         $this->userInputs[$attribute->getPlaceholder(true)] = $userInput->value;
@@ -75,7 +75,7 @@ class Create extends AbstractAction
             case $input instanceof DataInput:
                 if (empty($this->dataInput)) {
                     $this->dataInput = $input;
-                } else if($input->sourceNodeId != $this->dataInput->sourceNodeId) {
+                } else if ($input->sourceNodeId != $this->dataInput->sourceNodeId) {
                     throw new InputTypeException(
                         sprintf(
                             'Create action can have only one input data and it\'s already set to sourceNodeId=%d',
