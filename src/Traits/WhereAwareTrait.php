@@ -57,7 +57,7 @@ trait WhereAwareTrait
     private function registerConditionsUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
         if (is_array($userInput->value)) {
-            $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
+            $userInput->value = sprintf("'%s'", implode("','", $userInput->value));
         }
 
         $this->conditionsUserInputs[$attribute->getPlaceholder(true, '_cond')] = $userInput->value;
