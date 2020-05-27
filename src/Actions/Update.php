@@ -35,6 +35,10 @@ class Update extends Select
      */
     private function registerAttributeValueUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
+        if (is_array($userInput->value)) {
+            $userInput->value = join(',', $userInput->value);
+        }
+
         $this->attributesValuesUserInputs[$attribute->getPlaceholder(true, '_av')] = $userInput->value;
     }
 

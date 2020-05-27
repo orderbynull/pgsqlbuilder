@@ -32,11 +32,15 @@ class Type
     {
         switch ($toType) {
             case self::FILE:
-            case self::ENUM:
             case self::TEXT:
             case self::STRING:
             case self::DATETIME:
                 return sprintf('(%s)::text', $value);
+
+            // Enum это всегда массив, так что приведение к типу jsonb дает возможность искать по нему
+            // как (attributes->'attr'->>'value')::jsonb @> ?
+            case self::ENUM:
+                return sprintf('(%s)::jsonb', $value);
 
             case self::INTEGER:
             case self::FOREIGN_KEY:

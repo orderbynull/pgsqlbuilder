@@ -41,6 +41,10 @@ class Create extends AbstractAction
      */
     private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
+        if (is_array($userInput->value)) {
+            $userInput->value = join(',', $userInput->value);
+        }
+
         $this->userInputs[$attribute->getPlaceholder(true)] = $userInput->value;
     }
 
@@ -91,6 +95,7 @@ class Create extends AbstractAction
     /**
      * @return string
      * @throws InputTypeException
+     * @throws \Orderbynull\PgSqlBuilder\Exceptions\AttributeException
      * @throws \Orderbynull\PgSqlBuilder\Exceptions\TypeCastException
      */
     public function getSqlQuery(): string

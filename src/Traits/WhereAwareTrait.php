@@ -56,6 +56,10 @@ trait WhereAwareTrait
      */
     private function registerConditionsUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
+        if (is_array($userInput->value)) {
+            $userInput->value = join(',', $userInput->value);
+        }
+
         $this->conditionsUserInputs[$attribute->getPlaceholder(true, '_cond')] = $userInput->value;
     }
 
@@ -141,7 +145,7 @@ trait WhereAwareTrait
                                 $v->attribute->getPath(),
                                 $v->attribute->attributeType
                             ),
-                            $v->comprasionOperator,
+                            $v->attribute->attributeType === Type::ENUM ? '?|' : $v->comprasionOperator,
                             $this->conditionToSql($v)
                         );
                     } else {
@@ -181,19 +185,32 @@ trait WhereAwareTrait
         $input = $this->attributesValues[$placeholder];
 
         if ($input instanceof DataInput) {
-            return sprintf(
-                'ANY(SELECT %s FROM data_input.node_%d %s)',
-                Type::cast($input->sourceNodeColumn, $condition->attribute->attributeType),
-                $input->sourceNodeId,
-                isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
-            );
+            if ($condition->attribute->attributeType === Type::ENUM) {
+                return sprintf(
+                    '(SELECT array_agg(value) from data_input.node_%d, jsonb_array_elements_text(%s::jsonb) %s)',
+                    $input->sourceNodeId,
+                    $input->sourceNodeColumn,
+                    isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
+                );
+            } else {
+                return sprintf(
+                    'ANY(SELECT %s FROM data_input.node_%d %s)',
+                    Type::cast($input->sourceNodeColumn, $condition->attribute->attributeType),
+                    $input->sourceNodeId,
+                    isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
+                );
+            }
         }
 
         if ($input instanceof UserInput) {
-            return Type::cast(
-                sprintf("'%s'", $condition->attribute->getPlaceholder(true, '_cond')),
-                $condition->attribute->attributeType
-            );
+            if ($condition->attribute->attributeType === Type::ENUM) {
+                return sprintf("ARRAY[%s]", $condition->attribute->getPlaceholder(true, '_cond'));
+            } else {
+                return Type::cast(
+                    sprintf("'%s'", $condition->attribute->getPlaceholder(true, '_cond')),
+                    $condition->attribute->attributeType
+                );
+            }
         }
 
         throw new InputTypeException(sprintf('Unknown input source `%s` in %s', get_class($input), __METHOD__));
