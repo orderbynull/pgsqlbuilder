@@ -139,23 +139,15 @@ trait WhereAwareTrait
                 $chunks[] = '(';
                 foreach ($value as $v) {
                     if ($v instanceof Condition) {
-                        if ($v->attribute->attributeType === Type::ENUM) {
-                            $chunks[] = sprintf(
-                                'jsonb_exists_any(%s, %s)',
-                                $v->attribute->getPath(true),
-                                $this->conditionToSql($v)
-                            );
-                        } else {
-                            $chunks[] = sprintf(
-                                '%s %s %s',
-                                Type::cast(
-                                    $v->attribute->getPath(),
-                                    $v->attribute->attributeType
-                                ),
-                                $v->comprasionOperator,
-                                $this->conditionToSql($v)
-                            );
-                        }
+                        $chunks[] = sprintf(
+                            "%s %s %s",
+                            Type::cast(
+                                $v->attribute->getPath(),
+                                $v->attribute->attributeType
+                            ),
+                            $v->attribute->attributeType === Type::ENUM ? '?|' : $v->comprasionOperator,
+                            $this->conditionToSql($v)
+                        );
                     } else {
                         $chunks[] = $v;
                     }

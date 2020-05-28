@@ -26,7 +26,7 @@ $select->closeConditionsGroup();
 $select->addSummary(new Summary($attr1, false, 'MAX'));
 $select->addSummary(new Summary($attr2, true, null));
 $select->setConditionAttributeValue($attr1, new UserInput(63));
-$select->setConditionAttributeValue($attr2, new DataInput(10, 'c1'));
+$select->setConditionAttributeValue($attr2, new UserInput([1,2,3]));
 $select->limitDataInputTo(10, [1, 2, 3]);
 var_dump($select->getSqlQuery(), $select->getUserInputBindings());
 
