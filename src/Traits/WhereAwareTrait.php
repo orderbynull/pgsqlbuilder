@@ -145,7 +145,7 @@ trait WhereAwareTrait
                                 $v->attribute->getPath(),
                                 $v->attribute->attributeType
                             ),
-                            $v->attribute->attributeType === Type::ENUM ? '?|' : $v->comprasionOperator,
+                            $v->attribute->attributeType === Type::ENUM ? '??|' : $v->comprasionOperator,
                             $this->conditionToSql($v)
                         );
                     } else {
