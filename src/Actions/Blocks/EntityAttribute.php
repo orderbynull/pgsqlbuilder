@@ -47,11 +47,12 @@ class EntityAttribute
     }
 
     /**
+     * @param bool $returnJsonb
      * @return string
      */
-    public function getPath(): string
+    public function getPath(bool $returnJsonb = false): string
     {
-        return sprintf("_%d.attributes->'%s'->>'value'", $this->entityId, $this->attributeId);
+        return sprintf("_%d.attributes->'%s'%s'value'", $this->entityId, $this->attributeId, $returnJsonb ? '->' : '->>');
     }
 
     /**
