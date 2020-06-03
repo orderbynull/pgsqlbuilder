@@ -56,7 +56,11 @@ trait WhereAwareTrait
      */
     private function registerConditionsUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
-        if (is_array($userInput->value)) {
+        if (in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            if (!is_array($userInput->value)) {
+                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+            }
+
             $userInput->value = sprintf("'%s'", implode("','", $userInput->value));
         }
 
@@ -80,6 +84,7 @@ trait WhereAwareTrait
 
         $this->groupOfRules = [];
     }
+
 
     public function closeConditionsGroup(): void
     {
@@ -113,6 +118,7 @@ trait WhereAwareTrait
     /**
      * @param EntityAttribute $attribute
      * @param InputInterface $input
+     * @throws InputTypeException
      */
     public function setConditionAttributeValue(EntityAttribute $attribute, InputInterface $input): void
     {
@@ -145,7 +151,7 @@ trait WhereAwareTrait
                                 $v->attribute->getPath(),
                                 $v->attribute->attributeType
                             ),
-                            $v->attribute->attributeType === Type::ENUM ? '??|' : $v->comprasionOperator,
+                            in_array($v->attribute->attributeType, [Type::ENUM, Type::FILE]) ? '??|' : $v->comprasionOperator,
                             $this->conditionToSql($v)
                         );
                     } else {
@@ -185,9 +191,9 @@ trait WhereAwareTrait
         $input = $this->attributesValues[$placeholder];
 
         if ($input instanceof DataInput) {
-            if ($condition->attribute->attributeType === Type::ENUM) {
+            if (in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
                 return sprintf(
-                    '(SELECT array_agg(value) from data_input.node_%d, jsonb_array_elements_text(%s::jsonb) %s)',
+                    '(SELECT array_agg(value)::text[] from data_input.node_%d, jsonb_array_elements_text(%s::jsonb) %s)',
                     $input->sourceNodeId,
                     $input->sourceNodeColumn,
                     isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
@@ -203,8 +209,8 @@ trait WhereAwareTrait
         }
 
         if ($input instanceof UserInput) {
-            if ($condition->attribute->attributeType === Type::ENUM) {
-                return sprintf("ARRAY[%s]", $condition->attribute->getPlaceholder(true, '_cond'));
+            if (in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
+                return sprintf("ARRAY[%s]::text[]", $condition->attribute->getPlaceholder(true, '_cond'));
             } else {
                 return Type::cast(
                     sprintf("'%s'", $condition->attribute->getPlaceholder(true, '_cond')),

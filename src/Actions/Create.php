@@ -41,7 +41,11 @@ class Create extends AbstractAction
      */
     private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
-        if (is_array($userInput->value)) {
+        if (in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            if (!is_array($userInput->value)) {
+                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+            }
+
             $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
         }
 
@@ -113,7 +117,7 @@ class Create extends AbstractAction
                     );
                     break;
                 case $input instanceof UserInput:
-                    if ($entityAttribute->attributeType === Type::ENUM) {
+                    if (in_array($entityAttribute->attributeType, [Type::ENUM, Type::FILE])) {
                         $objectValue = Type::cast(
                             sprintf("'[%s]'", $entityAttribute->getPlaceholder(true)),
                             $entityAttribute->attributeType

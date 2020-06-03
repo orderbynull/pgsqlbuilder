@@ -31,14 +31,12 @@ class Type
     public static function cast(string $value, string $toType): string
     {
         switch ($toType) {
-            case self::FILE:
             case self::TEXT:
             case self::STRING:
             case self::DATETIME:
                 return sprintf('(%s)::text', $value);
 
-            // Enum это всегда массив, так что приведение к типу jsonb дает возможность искать по нему
-            // как (attributes->'attr'->>'value')::jsonb @> ?
+            case self::FILE:
             case self::ENUM:
                 return sprintf('(%s)::jsonb', $value);
 
