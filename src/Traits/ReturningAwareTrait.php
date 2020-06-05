@@ -8,6 +8,7 @@ use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
 use Orderbynull\PgSqlBuilder\Actions\Blocks\Summary;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
+use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
@@ -95,7 +96,6 @@ trait ReturningAwareTrait
         foreach ($this->attributesToReturn as $attribute) {
             isset($timesSeen[$attribute->attributeId]) ? $timesSeen[$attribute->attributeId]++ : $timesSeen[$attribute->attributeId] = 1;
 
-            $attributePath = $attribute->getPath();
             $attributeAlias = $attribute->getPlaceholder();
             $attributeAlias = sprintf('%s_%d', $attributeAlias, $timesSeen[$attribute->attributeId]);
 
@@ -128,10 +128,10 @@ trait ReturningAwareTrait
                     }
                     $chunks[0] = sprintf('dense_rank() over (order by %s) AS row_id', join(', ', $fieldsDenseRank));
                     if ($attributeAggFunction) {
-                        $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                        $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, $this->columnExpression($attribute), $attributeAlias);
                         $this->registerReturningAttribute(new ResultColumnMeta($attributeAlias, $attribute, $attributeAggFunction));
                     } else {
-                        $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                        $chunks[] = sprintf('%s AS %s', $this->columnExpression($attribute), $attributeAlias);
                         $this->registerReturningAttribute(new ResultColumnMeta($attributeAlias, $attribute));
                     }
                     break;
@@ -147,13 +147,13 @@ trait ReturningAwareTrait
                         );
                     }
                     $chunks[0] = '1 AS row_id';
-                    $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                    $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, $this->columnExpression($attribute), $attributeAlias);
                     $this->registerReturningAttribute(new ResultColumnMeta($attributeAlias, $attribute, $attributeAggFunction));
                     break;
 
                 case !$this->groupingUsed && !$this->aggFunctionsUsed:
                     $chunks[0] = sprintf('_%s.id AS row_id', $this->baseEntityId);
-                    $chunks[] = sprintf('%s AS %s', Type::cast($attributePath, $attribute->attributeType), $attributeAlias);
+                    $chunks[] = sprintf('%s AS %s', $this->columnExpression($attribute), $attributeAlias);
                     $this->registerReturningAttribute(new ResultColumnMeta($attributeAlias, $attribute));
                     break;
             }
@@ -164,6 +164,23 @@ trait ReturningAwareTrait
         }
 
         return join(', ', $chunks);
+    }
+
+    /**
+     * @param EntityAttribute $attribute
+     * @return string
+     * @throws TypeCastException
+     */
+    private function columnExpression(EntityAttribute $attribute): string
+    {
+        if ($attribute->attributeType === Type::FOREIGN_KEY) {
+            return sprintf(
+                "(SELECT array_to_string(array_agg(value->>'value'), ';', '-') AS value FROM entity_values, jsonb_each(attributes) WHERE id=(%s))",
+                Type::cast($attribute->getPath(), $attribute->attributeType)
+            );
+        }
+
+        return Type::cast($attribute->getPath(), $attribute->attributeType);
     }
 
     /**
