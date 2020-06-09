@@ -29,15 +29,15 @@ $select->closeConditionsGroup();
 $select->setConditionAttributeValue($attr1, new UserInput(63));
 $select->setConditionAttributeValue($attr2, new UserInput([1]));
 $select->limitDataInputTo(10, [1, 2, 3]);
-var_dump($select->getSqlQuery(), $select->getUserInputBindings());
+//var_dump($select->getSqlQuery(), $select->getUserInputBindings());
 
 
-//$create = new Create(71);
-//$create->setAttributeValue($attr1, new DataInput(1, 'col1'));
-//$create->setAttributeValue($attr2, new UserInput([1,2]));
-//$create->addAttributeToReturn($attr1);
-//$create->addAttributeToReturn($attr2);
-//var_dump($create->getSqlQuery(), $create->getUserInputBindings());
+$create = new Create(71);
+$create->setAttributeValue($attr1, new DataInput(1, 'col1'));
+$create->setAttributeValue($attr2, new UserInput([1,2]));
+$create->addAttributeToReturn($attr1);
+$create->addAttributeToReturn($attr2);
+var_dump($create->getSqlQuery(), $create->getUserInputBindings());
 
 
 //$delete = new Delete(10);
