@@ -36,8 +36,8 @@ class Update extends Select
      */
     private function registerAttributeValueUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
-        if (in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
-            if (!is_null($userInput->value) && !is_array($userInput->value)) {
+        if (!is_null($userInput->value) && in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            if (!is_array($userInput->value)) {
                 throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
             }
 
