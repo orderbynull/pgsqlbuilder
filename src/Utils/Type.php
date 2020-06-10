@@ -19,7 +19,7 @@ class Type
     const INTEGER = 'integer';
     const DECIMAL = 'decimal';
     const BOOLEAN = 'boolean';
-    const DATETIME = 'datetime';
+    const DATETIME = 'date_time';
     const FOREIGN_KEY = 'foreign_key';
 
     /**

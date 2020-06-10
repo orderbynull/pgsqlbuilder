@@ -118,7 +118,9 @@ class Create extends AbstractAction
                     );
                     break;
                 case $input instanceof UserInput:
-                    if (in_array($entityAttribute->attributeType, [Type::ENUM, Type::FILE])) {
+                    if (is_null($input->value)) {
+                        $objectValue = 'null';
+                    } else if (in_array($entityAttribute->attributeType, [Type::ENUM, Type::FILE])) {
                         $objectValue = Type::cast(
                             sprintf("'[%s]'", $entityAttribute->getPlaceholder(true)),
                             $entityAttribute->attributeType
