@@ -177,9 +177,11 @@ trait ReturningAwareTrait
             return sprintf(
                 <<<RAW
                 (
+                    -- Для строки возвращает ее аттрибуты в виде attr1;attr2;attr3
                     SELECT array_to_string(array_agg(value->>'value'), ';', '-') AS value 
                     FROM entity_values, jsonb_each(attributes) 
                     WHERE id=(%s) AND key IN (
+                            -- Возвращает строки с id аттрибутов, к которым у FK аттрибута есть доступ
                             SELECT jsonb_array_elements_text((value->>'attributesIds')::jsonb) 
                             FROM entities, jsonb_array_elements(attributes) 
                             WHERE id = %d and value->>'id' = '%s'
