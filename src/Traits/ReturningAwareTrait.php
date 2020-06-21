@@ -175,8 +175,20 @@ trait ReturningAwareTrait
     {
         if ($attribute->attributeType === Type::FOREIGN_KEY) {
             return sprintf(
-                "(SELECT array_to_string(array_agg(value->>'value'), ';', '-') AS value FROM entity_values, jsonb_each(attributes) WHERE id=(%s))",
-                Type::cast($attribute->getPath(), $attribute->attributeType)
+                <<<RAW
+                (
+                    SELECT array_to_string(array_agg(value->>'value'), ';', '-') AS value 
+                    FROM entity_values, jsonb_each(attributes) 
+                    WHERE id=(%s) AND key IN (
+                            SELECT jsonb_array_elements_text((value->>'attributesIds')::jsonb) 
+                            FROM entities, jsonb_array_elements(attributes) 
+                            WHERE id = %d and value->>'id' = '%s'
+                    )
+                ) 
+                RAW,
+                Type::cast($attribute->getPath(), $attribute->attributeType),
+                $attribute->entityId,
+                $attribute->attributeId
             );
         }
 
