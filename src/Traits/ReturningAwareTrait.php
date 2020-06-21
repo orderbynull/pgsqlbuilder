@@ -121,7 +121,7 @@ trait ReturningAwareTrait
                     foreach ($this->summarization as $summary) {
                         if ($summary->shouldGroup === true) {
                             $fieldsDenseRank[] = Type::cast(
-                                $summary->attribute->getPath(),
+                                $summary->attribute->getValue(),
                                 $summary->attribute->attributeType
                             );
                         }
@@ -173,28 +173,55 @@ trait ReturningAwareTrait
      */
     private function columnExpression(EntityAttribute $attribute): string
     {
+        $dateTimeFormat = 'DD Mon YYYY HH24:MI';
+
+        // Вместо row_id показываем список аттрибутов этого row_id
         if ($attribute->attributeType === Type::FOREIGN_KEY) {
+            $rowId = Type::cast($attribute->getValue(), $attribute->attributeType);
+
             return sprintf(
                 <<<RAW
                 (
-                    -- Для строки возвращает ее аттрибуты в виде attr1;attr2;attr3
-                    SELECT array_to_string(array_agg(value->>'value'), ';', '-') AS value 
-                    FROM entity_values, jsonb_each(attributes) 
-                    WHERE id=(%s) AND key IN (
-                            -- Возвращает строки с id аттрибутов, к которым у FK аттрибута есть доступ
-                            SELECT jsonb_array_elements_text((value->>'attributesIds')::jsonb) 
+                    WITH row_attributes_meta AS (
+                            SELECT value->>'id' AS id, value->>'type' AS type 
                             FROM entities, jsonb_array_elements(attributes) 
-                            WHERE id = %d and value->>'id' = '%s'
-                    )
-                ) 
+                            WHERE id IN (SELECT entity_id FROM entity_values WHERE id = %s)
+                         ),
+                         row_attributes_values AS (
+                            SELECT key AS id, value->>'value' AS value 
+                            FROM entity_values, jsonb_each(attributes) 
+                            WHERE id = %s
+                         ),
+                         row_attributes_full AS (
+                            SELECT id, type, CASE WHEN type = 'date_time' THEN to_char(value::timestamptz, '%s') ELSE value END 
+                            FROM row_attributes_meta 
+                            JOIN row_attributes_values USING (id)
+                            WHERE id IN (
+                                -- Возвращает строки с id аттрибутов, к которым у FK аттрибута есть доступ
+                                SELECT jsonb_array_elements_text((value->>'attributesIds')::jsonb)
+                                FROM entities, jsonb_array_elements(attributes)
+                                WHERE id = %d AND value->>'id' = '%s'
+                            )
+                         )
+
+                    -- Для строки возвращает ее аттрибуты в виде attr1;attr2;attr3
+                    SELECT array_to_string(array_agg(value), ';', '-') FROM row_attributes_full
+                )
                 RAW,
-                Type::cast($attribute->getPath(), $attribute->attributeType),
+                $rowId,
+                $rowId,
+                $dateTimeFormat,
                 $attribute->entityId,
                 $attribute->attributeId
             );
         }
 
-        return Type::cast($attribute->getPath(), $attribute->attributeType);
+        // Форматирование даты силами БД
+        if ($attribute->attributeType === Type::DATETIME) {
+            return sprintf("to_char((%s)::timestamptz, '%s')", $attribute->getValue(), $dateTimeFormat);
+        }
+
+        return Type::cast($attribute->getValue(), $attribute->attributeType);
     }
 
     /**

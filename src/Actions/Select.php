@@ -94,7 +94,7 @@ class Select extends AbstractAction
             }
 
             $chunks[] = Type::cast(
-                $summary->attribute->getPath(),
+                $summary->attribute->getValue(),
                 $summary->attribute->attributeType
             );
         }

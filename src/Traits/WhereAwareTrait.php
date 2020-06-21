@@ -149,7 +149,7 @@ trait WhereAwareTrait
                         $chunks[] = sprintf(
                             "%s %s %s",
                             Type::cast(
-                                $v->attribute->getPath(),
+                                $v->attribute->getValue(),
                                 $v->attribute->attributeType
                             ),
                             in_array($v->attribute->attributeType, [Type::ENUM, Type::FILE]) ? '??|' : $v->comprasionOperator,

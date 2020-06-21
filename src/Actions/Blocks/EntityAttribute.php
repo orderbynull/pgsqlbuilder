@@ -49,7 +49,7 @@ class EntityAttribute
     /**
      * @return string
      */
-    public function getPath(): string
+    public function getValue(): string
     {
         return sprintf("_%d.attributes->'%s'->>'value'", $this->entityId, $this->attributeId);
     }
