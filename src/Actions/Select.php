@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Actions;
 
+use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Actions\Blocks\Join;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
@@ -27,12 +28,26 @@ class Select extends AbstractAction
     private array $joins = [];
 
     /**
+     * @var array
+     */
+    private array $sorting = [];
+
+    /**
      * @param Join $join
      * @return $this|void
      */
     public function addJoin(Join $join): void
     {
         $this->joins[] = $join;
+    }
+
+    /**
+     * @param EntityAttribute $attribute
+     * @param string $direction
+     */
+    public function addSorting(EntityAttribute $attribute, string $direction): void
+    {
+        $this->sorting[] = [$attribute, $direction];
     }
 
     /**
@@ -51,6 +66,7 @@ class Select extends AbstractAction
             $this->buildJoins(),
             $this->buildWhere($this->baseEntityId),
             $this->buildGroupBy(),
+            $this->buildSorting(),
             'LIMIT ALL'
         ]);
 
@@ -78,6 +94,27 @@ class Select extends AbstractAction
         }
 
         return join(' ', $chunks);
+    }
+
+    /**
+     * @return string
+     */
+    private function buildSorting(): string
+    {
+        $chunks = [];
+
+        /** @var array $sorting */
+        foreach ($this->sorting as $sorting) {
+            list($attribute, $direction) = $sorting;
+
+            $chunks[] = sprintf(
+                '%s %s',
+                Type::cast($attribute->getValue(), $attribute->attributeType),
+                strtoupper($direction)
+            );
+        }
+
+        return count($chunks) ? sprintf('ORDER BY %s', join(',', $chunks)) : '';
     }
 
     /**
