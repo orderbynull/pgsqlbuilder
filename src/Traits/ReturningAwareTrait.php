@@ -226,7 +226,12 @@ trait ReturningAwareTrait
                             SELECT jsonb_array_elements_text(coalesce(%s, '[]')::jsonb)::int AS id
                          ),
                         fields_to_aggregate AS (
-                            SELECT f.id, f.name, f.mimetype, f.size, f.created_at, f.updated_at
+                            SELECT f.id, 
+                                   f.name, 
+                                   f.mimetype, 
+                                   f.size, 
+                                   f.created_at AS "createdAt", 
+                                   f.updated_at AS "updatedAt"
                             FROM attribute_files_ids
                             JOIN files f USING (id)
                         )
