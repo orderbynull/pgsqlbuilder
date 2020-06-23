@@ -216,6 +216,27 @@ trait ReturningAwareTrait
             );
         }
 
+        // Вместо массива id для аттрибута-файла выбираем мета-информацию о каждом файле и возвращаем результат
+        // как аггрегированную json-строку, которая уже может быть десереализована при обработке результата
+        if ($attribute->attributeType === Type::FILE) {
+            return sprintf(
+                <<<RAW
+                (
+                    WITH attribute_files_ids AS (
+                            SELECT jsonb_array_elements_text(coalesce(%s, '[]')::jsonb)::int AS id
+                         ),
+                        fields_to_aggregate AS (
+                            SELECT f.id, f.name, f.mimetype, f.size, f.created_at, f.updated_at
+                            FROM attribute_files_ids
+                            JOIN files f USING (id)
+                        )
+                    SELECT coalesce(jsonb_agg(fields_to_aggregate), '[]') AS agg FROM fields_to_aggregate;
+                )
+                RAW,
+                $attribute->getValue()
+            );
+        }
+
         // Форматирование даты силами БД
         if ($attribute->attributeType === Type::DATETIME) {
             return sprintf("to_char((%s)::timestamptz, '%s')", $attribute->getValue(), $dateTimeFormat);
