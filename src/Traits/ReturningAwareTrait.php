@@ -230,7 +230,7 @@ trait ReturningAwareTrait
                             FROM attribute_files_ids
                             JOIN files f USING (id)
                         )
-                    SELECT coalesce(jsonb_agg(fields_to_aggregate), '[]') AS agg FROM fields_to_aggregate;
+                    SELECT coalesce(jsonb_agg(fields_to_aggregate), '[]') AS agg FROM fields_to_aggregate
                 )
                 RAW,
                 $attribute->getValue()
