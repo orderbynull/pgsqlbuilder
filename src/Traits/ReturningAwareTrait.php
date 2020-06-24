@@ -216,7 +216,7 @@ trait ReturningAwareTrait
                          )
 
                     -- Для строки возвращает ее аттрибуты в виде attr1;attr2;attr3
-                    SELECT array_to_string(array_agg(value), ';', '-') FROM row_attributes_full
+                    SELECT array_to_string(array_agg(value), ', ', '-') FROM row_attributes_full
                 )
                 RAW,
                 $rowId,
