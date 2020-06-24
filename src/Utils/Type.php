@@ -31,9 +31,11 @@ class Type
     public static function cast(string $value, string $toType): string
     {
         switch ($toType) {
+            case self::DATETIME:
+                return sprintf('(%s)::timestamptz', $value);
+
             case self::TEXT:
             case self::STRING:
-            case self::DATETIME:
                 return sprintf('(%s)::text', $value);
 
             case self::FILE:
