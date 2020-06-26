@@ -255,7 +255,7 @@ trait ReturningAwareTrait
 
         // Форматирование даты силами БД
         if ($attribute->attributeType === Type::DATETIME) {
-            return sprintf("to_char((%s)::timestamptz, '%s')", $attribute->getValue(), $dateTimeFormat);
+            return sprintf('(%s)::text', $attribute->getValue());
         }
 
         return Type::cast($attribute->getValue(), $attribute->attributeType);
