@@ -176,7 +176,7 @@ trait ReturningAwareTrait
         // Вместо row_id показываем список аттрибутов этого row_id
         if ($attribute->attributeType === Type::FOREIGN_KEY) {
             return sprintf(
-                "SELECT get_row_fk_attribute_as_string(_%d.id, '%s')",
+                "get_row_fk_attribute_as_string(_%d.id, '%s')",
                 $attribute->entityId,
                 $attribute->attributeId
             );
