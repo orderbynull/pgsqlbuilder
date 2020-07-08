@@ -41,7 +41,7 @@ class Update extends Select
                 throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
             }
 
-            $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
+            $userInput->value = sprintf('["%s"]', implode('","', $userInput->value));
         }
 
         $this->attributesValuesUserInputs[$attribute->getPlaceholder(true, '_av')] = $userInput->value;
