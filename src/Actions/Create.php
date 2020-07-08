@@ -47,7 +47,7 @@ class Create extends AbstractAction
                 throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
             }
 
-            $userInput->value = sprintf('["%s"]', implode('","', $userInput->value));
+            $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
         }
 
         $this->userInputs[$attribute->getPlaceholder(true)] = $userInput->value;
