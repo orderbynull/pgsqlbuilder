@@ -4,6 +4,8 @@ use PHPUnit\Framework\TestCase;
 
 abstract class BaseTest extends TestCase
 {
+    abstract protected function up(): string;
+
     /**
      * @param string $dbName
      * @return PDO
@@ -22,15 +24,12 @@ abstract class BaseTest extends TestCase
         return sprintf('_%d', random_int(1, PHP_INT_MAX));
     }
 
-    abstract protected function up(): void;
-
     /**
      * @param string $queryToTest
-     * @param string $expectedJson
-     * @return bool
+     * @return string
      * @throws Throwable
      */
-    protected function equal(string $queryToTest, string $expectedJson): bool
+    protected function jsonResult(string $queryToTest): string
     {
         $tmpDbName = $this->randomDbName();
 
@@ -40,20 +39,36 @@ abstract class BaseTest extends TestCase
         try {
             $tmpConn = $this->dbConnect($tmpDbName);
 
+            $upQuery = $this->up();
+            if (!empty($upQuery) && $tmpConn->exec($upQuery) === false) {
+                throw new \Exception(implode(', ', $tmpConn->errorInfo()));
+            }
+
             $query = sprintf(
-                "WITH source AS (%s) SELECT jsonb_agg(source) = '%s'::jsonb FROM source",
-                $queryToTest,
-                $expectedJson
+                "WITH source AS (%s) SELECT coalesce(jsonb_agg(source),'[]'::jsonb) AS fact FROM source",
+                $queryToTest
             );
 
-            return $tmpConn->query($query)->fetchColumn();
+            $statement = $tmpConn->query($query);
+            if ($statement === false) {
+                throw new \Exception(implode(', ', $tmpConn->errorInfo()));
+            }
+
+            return $statement->fetch(PDO::FETCH_OBJ)->fact;
         } catch (\Throwable $throwable) {
             throw $throwable;
         } finally {
-            $tmpConn = null;
-
+            $mainConn->exec(
+                sprintf(
+                    "SELECT pg_terminate_backend(pg_stat_activity.pid)
+                     FROM pg_stat_activity
+                     WHERE pg_stat_activity.datname = '%s'  ",
+                    $tmpDbName
+                )
+            );
             $mainConn->exec(sprintf('DROP DATABASE %s', $tmpDbName));
 
+            $tmpConn = null;
             $mainConn = null;
         }
     }
