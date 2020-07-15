@@ -125,6 +125,29 @@ trait WhereAwareTrait
     }
 
     /**
+     * @param Condition $condition
+     * @return string
+     * @throws AttributeException
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
+    private function buildCondition(Condition $condition): string
+    {
+        $attributeValue = Type::cast($condition->attribute->getValue(), $condition->attribute->attributeType);
+
+        if (in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            switch ($condition->comprasionOperator) {
+                case '=':
+                    return sprintf('%s %s %s', $attributeValue, '??|', $this->conditionToSql($condition));
+                case '<>':
+                    return sprintf('NOT(%s %s %s)', $attributeValue, '??|', $this->conditionToSql($condition));
+            }
+        }
+
+        return sprintf('%s %s %s', $attributeValue, $condition->comprasionOperator, $this->conditionToSql($condition));
+    }
+
+    /**
      * @param int $baseEntityId
      * @return string
      * @throws AttributeException
@@ -140,15 +163,7 @@ trait WhereAwareTrait
                 $chunks[] = '(';
                 foreach ($value as $v) {
                     if ($v instanceof Condition) {
-                        $chunks[] = sprintf(
-                            "%s %s %s",
-                            Type::cast(
-                                $v->attribute->getValue(),
-                                $v->attribute->attributeType
-                            ),
-                            in_array($v->attribute->attributeType, [Type::ENUM, Type::FILE]) ? '??|' : $v->comprasionOperator,
-                            $this->conditionToSql($v)
-                        );
+                        $chunks[] = $this->buildCondition($v);
                     } else {
                         $chunks[] = $v;
                     }
