@@ -73,23 +73,17 @@ trait WhereAwareTrait
      */
     public function openConditionsGroup(?string $operator = null): void
     {
-        if (empty($this->groupOfRules)) {
-            return;
+        if (!is_null($operator)) {
+            $this->conditions[] = strtoupper($operator);
         }
-
-        $this->conditions[] = $this->groupOfRules;
-
-        if ($operator) {
-            $this->conditions[] = $operator;
-        }
-
-        $this->groupOfRules = [];
     }
-
 
     public function closeConditionsGroup(): void
     {
-        !empty($this->groupOfRules) && $this->conditions[] = $this->groupOfRules;
+        if (!empty($this->groupOfRules)) {
+            $this->conditions[] = $this->groupOfRules;
+            $this->groupOfRules = [];
+        }
     }
 
     /**
