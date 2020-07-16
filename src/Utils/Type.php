@@ -50,7 +50,7 @@ class Type
                 return sprintf('(%s)::decimal', $value);
 
             case self::BOOLEAN:
-                return sprintf('(%d)::bool', (int)($value === 'true'));
+                return sprintf('(%s)::bool', $value);
         }
 
         throw new TypeCastException(sprintf('Type casting to `%s` is not supported in %s', $toType, __METHOD__));
