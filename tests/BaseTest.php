@@ -2,6 +2,9 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Class BaseTest
+ */
 abstract class BaseTest extends TestCase
 {
     abstract protected function up(): string;
@@ -12,7 +15,11 @@ abstract class BaseTest extends TestCase
      */
     private function dbConnect(string $dbName): PDO
     {
-        return new PDO(sprintf('pgsql:host=%s;port=%d;dbname=%s;', '127.0.0.1', 5432, $dbName), 'pgsql', 'pgsql');
+        return new PDO(
+            sprintf('pgsql:host=%s;port=%d;dbname=%s;', getenv('DB_HOST'), getenv('DB_PORT'), $dbName),
+            getenv('DB_USERNAME'),
+            getenv('DB_PASSWORD')
+        );
     }
 
     /**
@@ -62,7 +69,7 @@ abstract class BaseTest extends TestCase
                 sprintf(
                     "SELECT pg_terminate_backend(pg_stat_activity.pid)
                      FROM pg_stat_activity
-                     WHERE pg_stat_activity.datname = '%s'  ",
+                     WHERE pg_stat_activity.datname = '%s'",
                     $tmpDbName
                 )
             );

@@ -143,6 +143,7 @@ class ForeignKeyDisplayTest extends BaseTest
               }
             ]
         RAW;
+
         $this->assertJsonStringEqualsJsonString($expected, $this->jsonResult($query));
     }
 }
