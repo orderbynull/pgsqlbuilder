@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Actions\Select;
+use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
+use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
+use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
 /**
- * Class BasicTest
+ * Class SimplestCasesTest
  */
-class BasicTest extends BaseTest
+class SimplestCasesTest extends BaseTest
 {
     protected function up(): string
     {
@@ -30,9 +33,9 @@ class BasicTest extends BaseTest
 
     /**
      * @throws Throwable
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\AttributeException
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\InputTypeException
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\TypeCastException
+     * @throws AttributeException
+     * @throws InputTypeException
+     * @throws TypeCastException
      */
     public function testTheMostMinimalSelectReturnsOnlyRowId(): void
     {
@@ -51,6 +54,12 @@ class BasicTest extends BaseTest
         $this->assertJsonStringEqualsJsonString($expected, $this->jsonResult($query));
     }
 
+    /**
+     * @throws Throwable
+     * @throws AttributeException
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
     public function testSelectRespectsAttributesToReturn(): void
     {
         // arrange

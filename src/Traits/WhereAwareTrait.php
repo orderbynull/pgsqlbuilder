@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Traits;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\Condition;
-use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
 use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\FiltrationException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
 use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
-use Orderbynull\PgSqlBuilder\Input\InputInterface;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
 use Orderbynull\PgSqlBuilder\Utils\Type;
 
@@ -51,24 +49,6 @@ trait WhereAwareTrait
     protected array $conditionsUserInputs = [];
 
     /**
-     * @param EntityAttribute $attribute
-     * @param UserInput $userInput
-     * @throws InputTypeException
-     */
-    private function registerConditionsUserInput(EntityAttribute $attribute, UserInput $userInput): void
-    {
-        if (!is_null($userInput) && in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
-            if (!is_array($userInput->value)) {
-                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
-            }
-
-            $userInput->value = sprintf("'%s'", implode("','", $userInput->value));
-        }
-
-        $this->conditionsUserInputs[$attribute->getPlaceholder(true, '_cond')] = $userInput->value;
-    }
-
-    /**
      * @param string|null $operator
      */
     public function openConditionsGroup(?string $operator = null): void
@@ -87,19 +67,19 @@ trait WhereAwareTrait
     }
 
     /**
+     * @param string|null $logic
      * @param Condition $condition
-     * @param string|null $operator
      * @throws FiltrationException
      */
-    public function addCondition(Condition $condition, ?string $operator = null): void
+    public function addCondition(?string $logic, Condition $condition): void
     {
         // AND/OR не может быть первым в группе условий
-        if ($operator && !end($this->groupOfRules) instanceof Condition) {
+        if (!is_null($logic) && !end($this->groupOfRules) instanceof Condition) {
             throw new FiltrationException('AND\OR can be added after condition only');
         }
 
-        if (!empty($operator)) {
-            $this->groupOfRules[] = $operator;
+        if (!is_null($logic)) {
+            $this->groupOfRules[] = $logic;
         }
 
         // Правила фильтрации не могут идти подряд без разделения AND/OR
@@ -111,40 +91,26 @@ trait WhereAwareTrait
     }
 
     /**
-     * @param EntityAttribute $attribute
-     * @param InputInterface $input
-     * @throws InputTypeException
-     */
-    public function setConditionAttributeValue(EntityAttribute $attribute, InputInterface $input): void
-    {
-        if ($input instanceof UserInput) {
-            $this->registerConditionsUserInput($attribute, $input);
-        }
-
-        $this->attributesValues[$attribute->getPlaceholder(true, '_cond')] = $input;
-    }
-
-    /**
+     * Преобразует Condition в строку вида "attribute = value"
+     *
      * @param Condition $condition
      * @return string
-     * @throws AttributeException
      * @throws InputTypeException
      * @throws TypeCastException
      */
     private function buildCondition(Condition $condition): string
     {
         $attributeValue = Type::cast($condition->attribute->getValue(), $condition->attribute->attributeType);
-
-        if (in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
-            switch ($condition->comprasionOperator) {
-                case '=':
-                    return sprintf('%s %s %s', $attributeValue, '??|', $this->conditionToSql($condition));
-                case '<>':
-                    return sprintf('NOT(%s %s %s)', $attributeValue, '??|', $this->conditionToSql($condition));
-            }
+        switch ($condition->attribute->attributeType) {
+            case Type::ENUM:
+            case Type::FILE:
+                if ($condition->comprasionOperator === '<>') {
+                    return sprintf('NOT(%s %s %s)', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
+                }
+                return sprintf('%s %s %s', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
         }
 
-        return sprintf('%s %s %s', $attributeValue, $condition->comprasionOperator, $this->conditionToSql($condition));
+        return sprintf('%s %s %s', $attributeValue, $condition->comprasionOperator, $this->rightPartOfConditionToSql($condition));
     }
 
     /**
@@ -183,49 +149,76 @@ trait WhereAwareTrait
 
     /**
      * @param Condition $condition
+     * @param bool $addColon
      * @return string
-     * @throws AttributeException
+     * @throws InputTypeException
+     */
+    private function placeValue(Condition $condition, bool $addColon = false): string
+    {
+        if (!($condition->value instanceof UserInput)) {
+            throw new InputTypeException(sprintf('Only UserInput allowed in %s', __METHOD__));
+        }
+
+        $placeholder = (string)random_int(1, PHP_INT_MAX);
+
+        if ($addColon === true) {
+            $placeholder = ":{$placeholder}";
+        }
+
+        if (!is_null($condition->value) && in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            if (!is_array($condition->value->value)) {
+                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+            }
+
+            $condition->value->value = sprintf("'%s'", implode("','", $condition->value->value));
+        }
+
+        $this->conditionsUserInputs[$placeholder] = $condition->value->value;
+
+        return $placeholder;
+    }
+
+    /**
+     * @param Condition $condition
+     * @return string
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    private function conditionToSql(Condition $condition): string
+    private function rightPartOfConditionToSql(Condition $condition): string
     {
-        $placeholder = $condition->attribute->getPlaceholder(true, '_cond');
-
-        if (empty($this->attributesValues[$placeholder])) {
-            throw new AttributeException(
-                sprintf('Missing value for attribute `%s` in %s', $condition->attribute, __METHOD__)
-            );
-        }
-
-        $input = $this->attributesValues[$placeholder];
+        $input = $condition->value;
 
         if ($input instanceof DataInput) {
-            if (in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
-                return sprintf(
-                    '(SELECT array_agg(value)::text[] from data_input.node_%d, jsonb_array_elements_text(%s::jsonb) %s)',
-                    $input->sourceNodeId,
-                    $input->sourceNodeColumn,
-                    isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
-                );
-            } else {
-                return sprintf(
-                    'ANY(SELECT %s FROM data_input.node_%d %s)',
-                    Type::cast($input->sourceNodeColumn, $condition->attribute->attributeType),
-                    $input->sourceNodeId,
-                    isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
-                );
+            switch ($condition->attribute->attributeType) {
+                case Type::ENUM:
+                case Type::FILE:
+                    return sprintf(
+                        '(SELECT array_agg(value)::text[] from data_input.node_%d, jsonb_array_elements_text(%s::jsonb) %s)',
+                        $input->sourceNodeId,
+                        $input->sourceNodeColumn,
+                        isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
+                    );
+
+                default:
+                    return sprintf(
+                        'ANY(SELECT %s FROM data_input.node_%d %s)',
+                        Type::cast($input->sourceNodeColumn, $condition->attribute->attributeType),
+                        $input->sourceNodeId,
+                        isset($this->dataInputLimits[$input->sourceNodeId]) ? sprintf('WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId])) : ''
+                    );
             }
         }
 
         if ($input instanceof UserInput) {
-            if (in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
-                return sprintf("ARRAY[%s]::text[]", $condition->attribute->getPlaceholder(true, '_cond'));
-            } else {
-                return Type::cast(
-                    sprintf("'%s'", $condition->attribute->getPlaceholder(true, '_cond')),
-                    $condition->attribute->attributeType
-                );
+            switch ($condition->attribute->attributeType) {
+                case Type::ENUM:
+                case Type::FILE:
+                    return sprintf("ARRAY[%s]::text[]", $this->placeValue($condition, true));
+                default:
+                    return Type::cast(
+                        sprintf("'%s'", $this->placeValue($condition, true)),
+                        $condition->attribute->attributeType
+                    );
             }
         }
 
