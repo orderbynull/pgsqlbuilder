@@ -54,7 +54,7 @@ class SimplestCasesTest extends BaseTest
      * @throws InputTypeException
      * @throws TypeCastException
      */
-    public function testTheMostMinimalSelectReturnsOnlyRowId(): void
+    public function testTheMostMinimalSelectIsReadyToUse(): void
     {
         // arrange
         $select = new Select(155);
@@ -76,6 +76,8 @@ class SimplestCasesTest extends BaseTest
      * @throws AttributeException
      * @throws InputTypeException
      * @throws TypeCastException
+     *
+     * @TODO: вынести тест аттрибута типа "файл" в отдельный метод, по аналогии с FK.
      */
     public function testEachAttributeTypeReturnedInProperFormat(): void
     {
