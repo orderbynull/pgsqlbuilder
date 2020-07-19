@@ -20,6 +20,10 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
 trait WhereAwareTrait
 {
     /**
+     * @var array
+     */
+    protected array $conditionsUserInputs = [];
+    /**
      * Rules to apply to WHERE operator.
      * Structure:
      * [
@@ -32,21 +36,14 @@ trait WhereAwareTrait
      * @var array
      */
     private array $conditions = [];
-
     /**
      * @var array
      */
     private array $groupOfRules = [];
-
     /**
      * @var array
      */
     private array $attributesValues = [];
-
-    /**
-     * @var array
-     */
-    protected array $conditionsUserInputs = [];
 
     /**
      * @param string|null $operator
@@ -91,29 +88,6 @@ trait WhereAwareTrait
     }
 
     /**
-     * Преобразует Condition в строку вида "attribute = value"
-     *
-     * @param Condition $condition
-     * @return string
-     * @throws InputTypeException
-     * @throws TypeCastException
-     */
-    private function buildCondition(Condition $condition): string
-    {
-        $attributeValue = Type::cast($condition->attribute->getValue(), $condition->attribute->attributeType);
-        switch ($condition->attribute->attributeType) {
-            case Type::ENUM:
-            case Type::FILE:
-                if ($condition->comprasionOperator === '<>') {
-                    return sprintf('NOT(%s %s %s)', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
-                }
-                return sprintf('%s %s %s', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
-        }
-
-        return sprintf('%s %s %s', $attributeValue, $condition->comprasionOperator, $this->rightPartOfConditionToSql($condition));
-    }
-
-    /**
      * @param int $baseEntityId
      * @return string
      * @throws AttributeException
@@ -148,34 +122,26 @@ trait WhereAwareTrait
     }
 
     /**
+     * Преобразует Condition в строку вида "attribute = value"
+     *
      * @param Condition $condition
-     * @param bool $addColon
      * @return string
      * @throws InputTypeException
+     * @throws TypeCastException
      */
-    private function placeValue(Condition $condition, bool $addColon = false): string
+    private function buildCondition(Condition $condition): string
     {
-        if (!($condition->value instanceof UserInput)) {
-            throw new InputTypeException(sprintf('Only UserInput allowed in %s', __METHOD__));
+        $attributeValue = Type::cast($condition->attribute->getValue(), $condition->attribute->attributeType);
+        switch ($condition->attribute->attributeType) {
+            case Type::ENUM:
+            case Type::FILE:
+                if ($condition->comprasionOperator === '<>') {
+                    return sprintf('NOT(%s %s %s)', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
+                }
+                return sprintf('%s %s %s', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
         }
 
-        $placeholder = (string)random_int(1, PHP_INT_MAX);
-
-        if ($addColon === true) {
-            $placeholder = ":{$placeholder}";
-        }
-
-        if (!is_null($condition->value) && in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
-            if (!is_array($condition->value->value)) {
-                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
-            }
-
-            $condition->value->value = sprintf("'%s'", implode("','", $condition->value->value));
-        }
-
-        $this->conditionsUserInputs[$placeholder] = $condition->value->value;
-
-        return $placeholder;
+        return sprintf('%s %s %s', $attributeValue, $condition->comprasionOperator, $this->rightPartOfConditionToSql($condition));
     }
 
     /**
@@ -223,5 +189,36 @@ trait WhereAwareTrait
         }
 
         throw new InputTypeException(sprintf('Unknown input source `%s` in %s', get_class($input), __METHOD__));
+    }
+
+    /**
+     * @param Condition $condition
+     * @param bool $addColon
+     * @return string
+     * @throws InputTypeException
+     */
+    private function placeValue(Condition $condition, bool $addColon = false): string
+    {
+        if (!($condition->value instanceof UserInput)) {
+            throw new InputTypeException(sprintf('Only UserInput allowed in %s', __METHOD__));
+        }
+
+        $placeholder = (string)random_int(1, PHP_INT_MAX);
+
+        if ($addColon === true) {
+            $placeholder = ":{$placeholder}";
+        }
+
+        if (!is_null($condition->value) && in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            if (!is_array($condition->value->value)) {
+                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+            }
+
+            $condition->value->value = sprintf("'%s'", implode("','", $condition->value->value));
+        }
+
+        $this->conditionsUserInputs[$placeholder] = $condition->value->value;
+
+        return $placeholder;
     }
 }

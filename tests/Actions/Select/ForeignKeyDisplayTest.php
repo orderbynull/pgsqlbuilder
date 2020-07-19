@@ -14,6 +14,40 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
  */
 class ForeignKeyDisplayTest extends BaseTest
 {
+    /**
+     * @throws Throwable
+     * @throws AttributeException
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
+    public function testForeignKeyDisplaysCorrectWhenReferencedRowHasArrayAttribute(): void
+    {
+        // arrange
+        $sut = new Select(41);
+        $sut->addAttributeToReturn(
+            new EntityAttribute(41, '5cb15a70-9780-4f03-b93e-75974caf807f', Type::FOREIGN_KEY)
+        );
+
+        // act
+        $query = $sut->getSqlQuery();
+
+        // assert
+        $expected = <<<RAW
+            [
+              {
+                "row_id": 75,
+                "ent_41_attr_5cb15a70_9780_4f03_b93e_75974caf807f_1": "Pending Approval, Deleted, Front-End Developer"
+              },
+              {
+                "row_id": 74,
+                "ent_41_attr_5cb15a70_9780_4f03_b93e_75974caf807f_1": "-"
+              }
+            ]
+        RAW;
+
+        $this->assertJsonStringEqualsJsonString($expected, $this->jsonResult($query));
+    }
+
     protected function up(): string
     {
         return <<<RAW
@@ -82,39 +116,5 @@ class ForeignKeyDisplayTest extends BaseTest
             INSERT INTO public.entity_values (id, entity_id, attributes, created_at, updated_at, deleted_at) VALUES (74, 41, '{"1291a5b4-edc5-4d07-8328-65e242676b7d": {"value": null}, "1568ca16-ac71-4caa-a0ff-edc6949a733f": {"value": null}, "1b64c006-cfef-4157-9a25-543fb444e526": {"value": ["Spam"]}, "27d2e005-3773-411b-8171-7f47c958c8d2": {"value": null}, "306b366a-243b-4b35-b274-b6e7fcc6d9fd": {"value": "72"}, "3896eed4-53c7-49a4-837c-28ec118639cb": {"value": null}, "4e53d3b3-0ed9-48de-8797-8b3cb08d65e4": {"value": null}, "50169244-bd50-4205-8a75-1d49f0a6e200": {"value": "Arcadi Gonzalez Graells"}, "5256e5e5-9913-4759-a8a8-80a23dbf5b53": {"value": null}, "57c21079-2063-4004-9de0-9e91a989eef2": {"value": null}, "5cb15a70-9780-4f03-b93e-75974caf807f": {"value": null}, "6f09b51e-a726-48d7-b0aa-e9e9a330e4df": {"value": null}, "729c824a-cef3-4f23-bc32-5f15c03efa34": {"value": null}, "7bd402db-40b1-4b5c-8bbb-822ab65af356": {"value": null}}', '2020-07-14 13:41:01', '2020-07-15 15:29:19', null);
             INSERT INTO public.entity_values (id, entity_id, attributes, created_at, updated_at, deleted_at) VALUES (83, 40, '{"56f8532c-e43d-4182-8e91-997ee9e308c6": {"value": ["Pending Approval", "Deleted"]}, "a067d0eb-fa3a-4d7a-8bb7-db295a27b922": {"value": "Front-End Developer"}, "a139e5c6-2cd8-4af2-9382-3c27bc78d284": {"value": "£1"}, "e0d7052c-e7a5-4e00-8574-da9f521ecaeb": {"value": null}}', '2020-07-14 15:32:50', '2020-07-14 15:33:23', null);
         RAW;
-    }
-
-    /**
-     * @throws Throwable
-     * @throws AttributeException
-     * @throws InputTypeException
-     * @throws TypeCastException
-     */
-    public function testForeignKeyDisplaysCorrectWhenReferencedRowHasArrayAttribute(): void
-    {
-        // arrange
-        $select = new Select(41);
-        $select->addAttributeToReturn(
-            new EntityAttribute(41, '5cb15a70-9780-4f03-b93e-75974caf807f', Type::FOREIGN_KEY)
-        );
-
-        // act
-        $query = $select->getSqlQuery();
-
-        // assert
-        $expected = <<<RAW
-            [
-              {
-                "row_id": 75,
-                "ent_41_attr_5cb15a70_9780_4f03_b93e_75974caf807f_1": "Pending Approval, Deleted, Front-End Developer"
-              },
-              {
-                "row_id": 74,
-                "ent_41_attr_5cb15a70_9780_4f03_b93e_75974caf807f_1": "-"
-              }
-            ]
-        RAW;
-
-        $this->assertJsonStringEqualsJsonString($expected, $this->jsonResult($query));
     }
 }

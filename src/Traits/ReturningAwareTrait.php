@@ -43,43 +43,22 @@ trait ReturningAwareTrait
     private array $returningColumnsMeta = [];
 
     /**
-     * @return Summary[]
+     * @param EntityAttribute $attribute
      */
-    private function getSummary(): array
+    public function addAttributeToReturn(EntityAttribute $attribute): void
     {
-        return $this->summarization;
+        $this->attributesToReturn[] = $attribute;
     }
 
     /**
-     * @param int $index
-     * @param int $entityId
-     * @param string $attributeId
-     * @return array
+     * @param Summary $summary
      */
-    private function getAttributeSummaryMeta(int $index, int $entityId, string $attributeId): array
+    public function addSummary(Summary $summary): void
     {
-        $data = [];
+        $this->summarization[] = $summary;
 
-        /** @var Summary $summary */
-        foreach ($this->summarization as $summary) {
-            if ($summary->attribute->entityId == $entityId && $summary->attribute->attributeId == $attributeId) {
-                $data[] = [$summary->shouldGroup, $summary->aggFuncName ?? null];
-            }
-        }
-
-        if (count($data) > 0) {
-            return $data[$index - 1];
-        }
-
-        return [false, null];
-    }
-
-    /**
-     * @param ResultColumnMeta $columnMeta
-     */
-    private function registerReturningAttribute(ResultColumnMeta $columnMeta): void
-    {
-        $this->returningColumnsMeta[(string)$columnMeta] = $columnMeta;
+        !$this->groupingUsed && $this->groupingUsed = $summary->shouldGroup;
+        !$this->aggFunctionsUsed && $this->aggFunctionsUsed = !empty($summary->aggFuncName);
     }
 
     /**
@@ -167,6 +146,30 @@ trait ReturningAwareTrait
     }
 
     /**
+     * @param int $index
+     * @param int $entityId
+     * @param string $attributeId
+     * @return array
+     */
+    private function getAttributeSummaryMeta(int $index, int $entityId, string $attributeId): array
+    {
+        $data = [];
+
+        /** @var Summary $summary */
+        foreach ($this->summarization as $summary) {
+            if ($summary->attribute->entityId == $entityId && $summary->attribute->attributeId == $attributeId) {
+                $data[] = [$summary->shouldGroup, $summary->aggFuncName ?? null];
+            }
+        }
+
+        if (count($data) > 0) {
+            return $data[$index - 1];
+        }
+
+        return [false, null];
+    }
+
+    /**
      * @param EntityAttribute $attribute
      * @return string
      * @throws TypeCastException
@@ -217,29 +220,26 @@ trait ReturningAwareTrait
     }
 
     /**
+     * @param ResultColumnMeta $columnMeta
+     */
+    private function registerReturningAttribute(ResultColumnMeta $columnMeta): void
+    {
+        $this->returningColumnsMeta[(string)$columnMeta] = $columnMeta;
+    }
+
+    /**
+     * @return Summary[]
+     */
+    private function getSummary(): array
+    {
+        return $this->summarization;
+    }
+
+    /**
      * @return array
      */
     private function getReturningColumnsMeta(): array
     {
         return array_values($this->returningColumnsMeta);
-    }
-
-    /**
-     * @param EntityAttribute $attribute
-     */
-    public function addAttributeToReturn(EntityAttribute $attribute): void
-    {
-        $this->attributesToReturn[] = $attribute;
-    }
-
-    /**
-     * @param Summary $summary
-     */
-    public function addSummary(Summary $summary): void
-    {
-        $this->summarization[] = $summary;
-
-        !$this->groupingUsed && $this->groupingUsed = $summary->shouldGroup;
-        !$this->aggFunctionsUsed && $this->aggFunctionsUsed = !empty($summary->aggFuncName);
     }
 }

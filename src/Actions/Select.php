@@ -98,27 +98,6 @@ class Select extends AbstractAction
 
     /**
      * @return string
-     */
-    private function buildSorting(): string
-    {
-        $chunks = [];
-
-        /** @var array $sorting */
-        foreach ($this->sorting as $sorting) {
-            list($attribute, $direction) = $sorting;
-
-            $chunks[] = sprintf(
-                '%s %s',
-                Type::cast($attribute->getValue(), $attribute->attributeType),
-                strtoupper($direction)
-            );
-        }
-
-        return count($chunks) ? sprintf('ORDER BY %s', join(',', $chunks)) : '';
-    }
-
-    /**
-     * @return string
      * @throws TypeCastException
      */
     private function buildGroupBy(): string
@@ -137,6 +116,27 @@ class Select extends AbstractAction
         }
 
         return count($chunks) ? sprintf('GROUP BY %s', join(',', $chunks)) : '';
+    }
+
+    /**
+     * @return string
+     */
+    private function buildSorting(): string
+    {
+        $chunks = [];
+
+        /** @var array $sorting */
+        foreach ($this->sorting as $sorting) {
+            list($attribute, $direction) = $sorting;
+
+            $chunks[] = sprintf(
+                '%s %s',
+                Type::cast($attribute->getValue(), $attribute->attributeType),
+                strtoupper($direction)
+            );
+        }
+
+        return count($chunks) ? sprintf('ORDER BY %s', join(',', $chunks)) : '';
     }
 
     /**

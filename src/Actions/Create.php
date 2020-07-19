@@ -36,24 +36,6 @@ class Create extends AbstractAction
     private array $attributesValues = [];
 
     /**
-     * @param EntityAttribute $attribute
-     * @param UserInput $userInput
-     * @throws InputTypeException
-     */
-    private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
-    {
-        if (!is_null($userInput->value) && in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
-            if (!is_array($userInput->value)) {
-                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
-            }
-
-            $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
-        }
-
-        $this->userInputs[$attribute->getPlaceholder(true)] = $userInput->value;
-    }
-
-    /**
      * @return array
      */
     public function getUserInputBindings(): array
@@ -95,6 +77,24 @@ class Create extends AbstractAction
                 $this->registerUserInput($entityAttribute, $input);
                 break;
         }
+    }
+
+    /**
+     * @param EntityAttribute $attribute
+     * @param UserInput $userInput
+     * @throws InputTypeException
+     */
+    private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
+    {
+        if (!is_null($userInput->value) && in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
+            if (!is_array($userInput->value)) {
+                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+            }
+
+            $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
+        }
+
+        $this->userInputs[$attribute->getPlaceholder(true)] = $userInput->value;
     }
 
     /**

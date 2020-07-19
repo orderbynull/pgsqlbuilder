@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Orderbynull\PgSqlBuilder\Actions;
 
-use Orderbynull\PgSqlBuilder\Actions\Blocks\ResultColumnMeta;
 use Orderbynull\PgSqlBuilder\Traits\ReturningAwareTrait;
 use Orderbynull\PgSqlBuilder\Traits\WhereAwareTrait;
 

@@ -7,30 +7,6 @@ use PHPUnit\Framework\TestCase;
  */
 abstract class BaseTest extends TestCase
 {
-    abstract protected function up(): string;
-
-    /**
-     * @param string $dbName
-     * @return PDO
-     */
-    private function dbConnect(string $dbName): PDO
-    {
-        return new PDO(
-            sprintf('pgsql:host=%s;port=%d;dbname=%s;', getenv('DB_HOST'), getenv('DB_PORT'), $dbName),
-            getenv('DB_USERNAME'),
-            getenv('DB_PASSWORD')
-        );
-    }
-
-    /**
-     * @return string
-     * @throws Exception
-     */
-    private function randomDbName(): string
-    {
-        return sprintf('_%d', random_int(1, PHP_INT_MAX));
-    }
-
     /**
      * @param string $queryToTest
      * @return string
@@ -79,4 +55,28 @@ abstract class BaseTest extends TestCase
             $mainConn = null;
         }
     }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    private function randomDbName(): string
+    {
+        return sprintf('_%d', random_int(1, PHP_INT_MAX));
+    }
+
+    /**
+     * @param string $dbName
+     * @return PDO
+     */
+    private function dbConnect(string $dbName): PDO
+    {
+        return new PDO(
+            sprintf('pgsql:host=%s;port=%d;dbname=%s;', getenv('DB_HOST'), getenv('DB_PORT'), $dbName),
+            getenv('DB_USERNAME'),
+            getenv('DB_PASSWORD')
+        );
+    }
+
+    abstract protected function up(): string;
 }
