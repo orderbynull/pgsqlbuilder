@@ -139,6 +139,15 @@ class Create extends AbstractAction
             $buildObjectChunks[] = "jsonb_build_object('{$entityAttribute->attributeId}', jsonb_build_object('value', {$objectValue}))";
         }
 
+        $dataInput = '';
+        if (!empty($this->dataInput)) {
+            $dataInput = "FROM data_input.node_{$this->dataInput->sourceNodeId}";
+
+            if (isset($this->dataInputLimits[$input->sourceNodeId])) {
+                $dataInput .= sprintf(' WHERE row_id IN (%s)', join(',', $this->dataInputLimits[$input->sourceNodeId]));
+            }
+        }
+
         $queryChunks = [
             'INSERT',
             'INTO',
@@ -149,7 +158,7 @@ class Create extends AbstractAction
             sprintf('%s,', join('||', $buildObjectChunks)),
             'NOW(),',
             'NOW()',
-            !empty($this->dataInput) ? sprintf('FROM data_input.node_%d', $this->dataInput->sourceNodeId) : '',
+            $dataInput,
             'RETURNING *'
         ];
 
