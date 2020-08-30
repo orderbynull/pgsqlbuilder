@@ -187,7 +187,7 @@ trait ReturningAwareTrait
 
         // Вместо массива id для аттрибута-файла выбираем мета-информацию о каждом файле и возвращаем результат
         // как аггрегированную json-строку, которая уже может быть десереализована при обработке результата
-        if ($attribute->attributeType === Type::FILE) {
+        if (in_array($attribute->attributeType, [Type::FILE, Type::SIGN], true)) {
             return sprintf(
                 <<<RAW
                 (
@@ -195,11 +195,11 @@ trait ReturningAwareTrait
                             SELECT jsonb_array_elements_text(coalesce(%s, '[]')::jsonb)::int AS id
                          ),
                         fields_to_aggregate AS (
-                            SELECT f.id, 
-                                   f.name, 
-                                   f.mimetype, 
-                                   f.size, 
-                                   f.created_at AS "createdAt", 
+                            SELECT f.id,
+                                   f.name,
+                                   f.mimetype,
+                                   f.size,
+                                   f.created_at AS "createdAt",
                                    f.updated_at AS "updatedAt"
                             FROM attribute_files_ids
                             JOIN files f USING (id)

@@ -12,15 +12,17 @@ use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
  */
 class Type
 {
-    const FILE = 'file';
-    const ENUM = 'enum';
-    const TEXT = 'text';
-    const STRING = 'string';
-    const INTEGER = 'integer';
-    const DECIMAL = 'decimal';
-    const BOOLEAN = 'boolean';
-    const DATETIME = 'date_time';
+    const FILE        = 'file';
+    const ENUM        = 'enum';
+    const TEXT        = 'text';
+    const STRING      = 'string';
+    const INTEGER     = 'integer';
+    const DECIMAL     = 'decimal';
+    const BOOLEAN     = 'boolean';
+    const DATETIME    = 'date_time';
     const FOREIGN_KEY = 'foreign_key';
+    const LINK        = 'link';
+    const SIGN        = 'sign';
 
     /**
      * @param string $value
