@@ -41,6 +41,7 @@ class Type
                 return sprintf('(%s)::text', $value);
 
             case self::FILE:
+            case self::SIGN:
             case self::ENUM:
                 return sprintf('(%s)::jsonb', $value);
 

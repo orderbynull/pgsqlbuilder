@@ -4,11 +4,8 @@ namespace Orderbynull\PgSqlBuilder;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\Condition;
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
-use Orderbynull\PgSqlBuilder\Actions\Blocks\Summary;
 use Orderbynull\PgSqlBuilder\Actions\Create;
-use Orderbynull\PgSqlBuilder\Actions\Delete;
 use Orderbynull\PgSqlBuilder\Actions\Select;
-use Orderbynull\PgSqlBuilder\Actions\Update;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
 
@@ -36,7 +33,7 @@ var_dump($select->getSqlQuery(), $select->getUserInputBindings());
 
 $create = new Create(71);
 $create->setAttributeValue($attr1, new DataInput(1, 'col1'));
-$create->setAttributeValue($attr2, new UserInput([1,2]));
+$create->setAttributeValue($attr2, new UserInput([1, 2]));
 $create->addAttributeToReturn($attr1);
 $create->addAttributeToReturn($attr2);
 var_dump($create->getSqlQuery(), $create->getUserInputBindings());
