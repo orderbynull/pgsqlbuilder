@@ -135,6 +135,7 @@ trait WhereAwareTrait
         switch ($condition->attribute->attributeType) {
             case Type::ENUM:
             case Type::FILE:
+            case Type::SIGN:
                 if ($condition->comprasionOperator === '<>') {
                     return sprintf('NOT(%s %s %s)', $attributeValue, '??|', $this->rightPartOfConditionToSql($condition));
                 }
@@ -158,6 +159,7 @@ trait WhereAwareTrait
             switch ($condition->attribute->attributeType) {
                 case Type::ENUM:
                 case Type::FILE:
+                case Type::SIGN:
                     return sprintf(
                         '(SELECT array_agg(value)::text[] from data_input.node_%d, jsonb_array_elements_text(%s::jsonb) %s)',
                         $input->sourceNodeId,
@@ -179,6 +181,7 @@ trait WhereAwareTrait
             switch ($condition->attribute->attributeType) {
                 case Type::ENUM:
                 case Type::FILE:
+                case Type::SIGN:
                     return sprintf("ARRAY[%s]::text[]", $this->placeValue($condition, true));
                 default:
                     return Type::cast(
@@ -209,9 +212,9 @@ trait WhereAwareTrait
             $placeholder = ":{$placeholder}";
         }
 
-        if (!is_null($condition->value) && in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE])) {
+        if (!is_null($condition->value) && in_array($condition->attribute->attributeType, [Type::ENUM, Type::FILE, Type::SIGN])) {
             if (!is_array($condition->value->value)) {
-                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+                throw new InputTypeException('UserInput value must be array for ENUM, FILE and SIGN types');
             }
 
             $condition->value->value = sprintf("'%s'", implode("','", $condition->value->value));

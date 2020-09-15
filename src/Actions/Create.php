@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Orderbynull\PgSqlBuilder\Actions;
 
 use Orderbynull\PgSqlBuilder\Actions\Blocks\EntityAttribute;
+use Orderbynull\PgSqlBuilder\Exceptions\AttributeException;
 use Orderbynull\PgSqlBuilder\Exceptions\InputTypeException;
+use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Input\DataInput;
 use Orderbynull\PgSqlBuilder\Input\InputInterface;
 use Orderbynull\PgSqlBuilder\Input\UserInput;
@@ -86,9 +88,9 @@ class Create extends AbstractAction
      */
     private function registerUserInput(EntityAttribute $attribute, UserInput $userInput): void
     {
-        if (!is_null($userInput->value) && in_array($attribute->attributeType, [Type::ENUM, Type::FILE])) {
+        if (!is_null($userInput->value) && in_array($attribute->attributeType, [Type::ENUM, Type::FILE, Type::SIGN])) {
             if (!is_array($userInput->value)) {
-                throw new InputTypeException('UserInput value must be array for ENUM or FILE type');
+                throw new InputTypeException('UserInput value must be array for ENUM, FILE and SIGN types');
             }
 
             $userInput->value = sprintf('"%s"', implode('","', $userInput->value));
@@ -100,8 +102,8 @@ class Create extends AbstractAction
     /**
      * @return string
      * @throws InputTypeException
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\AttributeException
-     * @throws \Orderbynull\PgSqlBuilder\Exceptions\TypeCastException
+     * @throws AttributeException
+     * @throws TypeCastException
      */
     public function getSqlQuery(): string
     {
@@ -120,7 +122,7 @@ class Create extends AbstractAction
                 case $input instanceof UserInput:
                     if (is_null($input->value)) {
                         $objectValue = 'null';
-                    } else if (in_array($entityAttribute->attributeType, [Type::ENUM, Type::FILE])) {
+                    } else if (in_array($entityAttribute->attributeType, [Type::ENUM, Type::FILE, Type::SIGN])) {
                         $objectValue = Type::cast(
                             sprintf("'[%s]'", $entityAttribute->getPlaceholder(true)),
                             $entityAttribute->attributeType
