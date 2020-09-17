@@ -38,6 +38,7 @@ class Type
 
             case self::TEXT:
             case self::STRING:
+            case self::LINK:
                 return sprintf('(%s)::text', $value);
 
             case self::FILE:
