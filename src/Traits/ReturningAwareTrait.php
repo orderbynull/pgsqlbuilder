@@ -176,7 +176,8 @@ trait ReturningAwareTrait
      */
     private function columnExpression(EntityAttribute $attribute): string
     {
-        // Вместо row_id показываем список аттрибутов этого row_id
+        // В случае, если аттрибут типа FK, то вместо числового значения(row_id)
+        // показываем список аттрибутов этого внешнего ключа.
         if ($attribute->attributeType === Type::FOREIGN_KEY) {
             return sprintf(
                 "coalesce(get_row_fk_attribute_as_string(_%d.id, '%s'), '-')",
@@ -186,7 +187,7 @@ trait ReturningAwareTrait
         }
 
         // Вместо массива id для аттрибута-файла выбираем мета-информацию о каждом файле и возвращаем результат
-        // как аггрегированную json-строку, которая уже может быть десереализована при обработке результата
+        // как аггрегированную json-строку, которая уже может быть десереализована при обработке результата.
         if (in_array($attribute->attributeType, [Type::FILE, Type::SIGN], true)) {
             return sprintf(
                 <<<RAW
@@ -203,6 +204,7 @@ trait ReturningAwareTrait
                                    f.updated_at AS "updatedAt"
                             FROM attribute_files_ids
                             JOIN files f USING (id)
+                            WHERE f.deleted_at IS NULL
                         )
                     SELECT coalesce(jsonb_agg(fields_to_aggregate), '[]') AS agg FROM fields_to_aggregate
                 )
