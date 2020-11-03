@@ -90,7 +90,6 @@ trait WhereAwareTrait
     /**
      * @param int $baseEntityId
      * @return string
-     * @throws AttributeException
      * @throws InputTypeException
      * @throws TypeCastException
      */
@@ -115,10 +114,10 @@ trait WhereAwareTrait
         }
 
         if (count($chunks)) {
-            return sprintf('WHERE _%d.entity_id = %d AND (%s)', $baseEntityId, $baseEntityId, join(' ', $chunks));
+            return sprintf('WHERE _%d.entity_id = %d AND (%s) AND deleted_at IS NULL', $baseEntityId, $baseEntityId, join(' ', $chunks));
         }
 
-        return sprintf('WHERE _%d.entity_id = %d', $baseEntityId, $baseEntityId);
+        return sprintf('WHERE _%d.entity_id = %d AND deleted_at IS NULL', $baseEntityId, $baseEntityId);
     }
 
     /**
