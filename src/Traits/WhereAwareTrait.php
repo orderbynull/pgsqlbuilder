@@ -114,10 +114,10 @@ trait WhereAwareTrait
         }
 
         if (count($chunks)) {
-            return sprintf('WHERE _%d.entity_id = %d AND (%s) AND deleted_at IS NULL', $baseEntityId, $baseEntityId, join(' ', $chunks));
+            return sprintf('WHERE _%d.entity_id = %d AND (%s) AND _%d.deleted_at IS NULL', $baseEntityId, $baseEntityId, join(' ', $chunks), $baseEntityId);
         }
 
-        return sprintf('WHERE _%d.entity_id = %d AND deleted_at IS NULL', $baseEntityId, $baseEntityId);
+        return sprintf('WHERE _%d.entity_id = %d AND _%d.deleted_at IS NULL', $baseEntityId, $baseEntityId, $baseEntityId);
     }
 
     /**
