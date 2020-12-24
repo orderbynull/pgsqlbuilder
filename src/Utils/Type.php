@@ -13,16 +13,17 @@ use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 class Type
 {
     const FILE        = 'file';
+    const LINK        = 'link';
     const ENUM        = 'enum';
+    const SIGN        = 'sign';
     const TEXT        = 'text';
     const STRING      = 'string';
     const INTEGER     = 'integer';
     const DECIMAL     = 'decimal';
     const BOOLEAN     = 'boolean';
+    const CALENDAR    = 'calendar';
     const DATETIME    = 'date_time';
     const FOREIGN_KEY = 'foreign_key';
-    const LINK        = 'link';
-    const SIGN        = 'sign';
 
     /**
      * @param string $value
@@ -39,6 +40,7 @@ class Type
             case self::TEXT:
             case self::STRING:
             case self::LINK:
+            case self::CALENDAR:
                 return sprintf('trim((%s)::text)', $value);
 
             case self::FILE:
