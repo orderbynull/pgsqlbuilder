@@ -33,6 +33,17 @@ class Select extends AbstractAction
     private array $sorting = [];
 
     /**
+     * @var int
+     */
+    private int $limit = 0;
+
+    /**
+     * @var int
+     */
+    private int $offset = 0;
+
+
+    /**
      * @param Join $join
      * @return $this|void
      */
@@ -51,6 +62,22 @@ class Select extends AbstractAction
     }
 
     /**
+     * @param int $limit
+     */
+    public function addLimit(int $limit): void
+    {
+        $this->limit = $limit;
+    }
+
+    /**
+     * @param int $offset
+     */
+    public function addOffset(int $offset): void
+    {
+        $this->offset = $offset;
+    }
+
+    /**
      * @return string
      * @throws AttributeException
      * @throws InputTypeException
@@ -58,7 +85,7 @@ class Select extends AbstractAction
      */
     public function getSqlQuery(): string
     {
-        $chunks = array_filter([
+        $chunks = [
             'SELECT',
             $this->buildReturning(),
             'FROM',
@@ -67,16 +94,23 @@ class Select extends AbstractAction
             $this->buildWhere($this->baseEntityId),
             $this->buildGroupBy(),
             $this->buildSorting(),
-            'LIMIT ALL'
-        ]);
+        ];
 
-        return join(' ', $chunks);
+        if ($this->limit > 0) {
+            $chunks[] = 'LIMIT ' . $this->limit;
+        }
+
+        if ($this->offset > 0) {
+            $chunks[] = 'OFFSET ' . $this->offset;
+        }
+
+        return join(' ', array_filter($chunks));
     }
 
     /**
      * @return string
      */
-    private function buildJoins(): string
+    protected function buildJoins(): string
     {
         $chunks = [];
 
@@ -100,7 +134,7 @@ class Select extends AbstractAction
      * @return string
      * @throws TypeCastException
      */
-    private function buildGroupBy(): string
+    protected function buildGroupBy(): string
     {
         $chunks = [];
 
@@ -121,7 +155,7 @@ class Select extends AbstractAction
     /**
      * @return string
      */
-    private function buildSorting(): string
+    protected function buildSorting(): string
     {
         $chunks = [];
 
