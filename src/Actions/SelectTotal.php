@@ -19,6 +19,7 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
  */
 class SelectTotal extends Select
 {
+    
     /**
      * @return string
      * @throws AttributeException
