@@ -42,6 +42,11 @@ class Select extends AbstractAction
      */
     private int $offset = 0;
 
+    /**
+     * @var string
+     */
+    private string $searchString = '';
+
 
     /**
      * @param Join $join
@@ -59,6 +64,14 @@ class Select extends AbstractAction
     public function addSorting(EntityAttribute $attribute, string $direction): void
     {
         $this->sorting[] = [$attribute, $direction];
+    }
+
+    /**
+     * @param string $searchString
+     */
+    public function addSearchString(string $searchString): void
+    {
+        $this->searchString = $searchString;
     }
 
     /**
@@ -85,26 +98,95 @@ class Select extends AbstractAction
      */
     public function getSqlQuery(): string
     {
+        $subQuery  = $this->buildWhereSubQuery();
+        $returning = $this->buildReturning();
+
+        $where = sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery);
+
+        if(!empty($this->searchString)){
+            $search = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
+            $where .= " AND $search";
+        }
+        
         $chunks = [
             'SELECT',
-            $this->buildReturning(),
+            $returning,
             'FROM',
             sprintf('entity_values AS _%d', $this->baseEntityId),
             $this->buildJoins(),
-            $this->buildWhere($this->baseEntityId),
+            sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery),
             $this->buildGroupBy(),
             $this->buildSorting(),
         ];
 
-        if ($this->limit > 0) {
-            $chunks[] = 'LIMIT ' . $this->limit;
-        }
-
-        if ($this->offset > 0) {
-            $chunks[] = 'OFFSET ' . $this->offset;
-        }
-
         return join(' ', array_filter($chunks));
+    }
+
+    /**
+     * @param array $columns
+     * @param string $searchString
+     * @return string
+     */
+    private function buildSearchCondition(array $columns, string $searchString): string
+    {
+        $columns = array_map(
+            function ($column) {
+                return $column->columnId . '::text';
+            },
+            $columns
+        );
+
+        $columns = implode(',', $columns);
+        $searchString = strtolower($searchString);
+
+        return "LOWER(concat_ws(' ', $columns)) LIKE '%$searchString%'";
+    }
+
+    /**
+     * @return string
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
+    public function buildWhereSubQuery(): string
+    {
+        return join(
+            ' ',
+            array_filter(
+                [
+                    'SELECT',
+                    'id',
+                    'FROM',
+                    sprintf('entity_values AS _%d', $this->baseEntityId),
+                    $this->buildWhere($this->baseEntityId),
+                    $this->buildLimit(),
+                    $this->buildOffset()
+                ]
+            )
+        );
+    }
+
+    /**
+     * @return string
+     */
+    private function buildLimit(): string
+    {
+        if ($this->limit > 0) {
+            return 'LIMIT ' . $this->limit;
+        }
+
+        return '';
+    }
+
+    /**
+     * @return string
+     */
+    private function buildOffset(): string
+    {
+        if ($this->offset > 0) {
+            return 'OFFSET ' . $this->offset;
+        }
+
+        return '';
     }
 
     /**
