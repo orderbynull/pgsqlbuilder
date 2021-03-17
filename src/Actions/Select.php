@@ -47,6 +47,11 @@ class Select extends AbstractAction
      */
     private string $searchString = '';
 
+    /**
+     * @var string
+     */
+    private string $nestedFilter = '';
+
 
     /**
      * @param Join $join
@@ -75,6 +80,14 @@ class Select extends AbstractAction
     }
 
     /**
+     * @param string $nestedFilter
+     */
+    public function addNestedFilter(string $nestedFilter): void
+    {
+        $this->nestedFilter = $nestedFilter;
+    }
+
+    /**
      * @param int $limit
      */
     public function addLimit(int $limit): void
@@ -98,28 +111,43 @@ class Select extends AbstractAction
      */
     public function getSqlQuery(): string
     {
-        $subQuery  = $this->buildWhereSubQuery();
+        return join(' ', array_filter($this->getSqlChunks()));
+    }
+
+    /**
+     * @return array
+     * @throws AttributeException
+     * @throws InputTypeException
+     * @throws TypeCastException
+     */
+    protected function getSqlChunks(): array
+    {
+        $subQuery = $this->buildWhereSubQuery();
         $returning = $this->buildReturning();
 
         $where = sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery);
 
-        if(!empty($this->searchString)){
+        if (!empty($this->searchString)) {
             $search = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
             $where .= " AND $search";
         }
-        
+
+        if (!empty($this->nestedFilter)) {
+            $where .= " AND {$this->nestedFilter}";
+        }
+
         $chunks = [
             'SELECT',
             $returning,
             'FROM',
             sprintf('entity_values AS _%d', $this->baseEntityId),
             $this->buildJoins(),
-            sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery),
+            $where,
             $this->buildGroupBy(),
             $this->buildSorting(),
         ];
 
-        return join(' ', array_filter($chunks));
+        return $chunks;
     }
 
     /**

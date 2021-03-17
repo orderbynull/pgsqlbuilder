@@ -19,7 +19,6 @@ use Orderbynull\PgSqlBuilder\Utils\Type;
  */
 class SelectTotal extends Select
 {
-    
     /**
      * @return string
      * @throws AttributeException
@@ -28,16 +27,9 @@ class SelectTotal extends Select
      */
     public function getSqlQuery(): string
     {
-        $chunks = [
-            'SELECT',
-            'COUNT(*) as total',
-            'FROM',
-            sprintf('entity_values AS _%d', $this->baseEntityId),
-            $this->buildJoins(),
-            $this->buildWhere($this->baseEntityId),
-            $this->buildGroupBy(),
-            $this->buildSorting(),
-        ];
+        $chunks = parent::getSqlChunks();
+
+        $chunks[1] = 'COUNT(*) as total';
 
         return join(' ', array_filter($chunks));
     }
