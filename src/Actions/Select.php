@@ -42,16 +42,6 @@ class Select extends AbstractAction
      */
     private int $offset = 0;
 
-    /**
-     * @var string
-     */
-    private string $searchString = '';
-
-    /**
-     * @var string
-     */
-    private string $nestedFilter = '';
-
 
     /**
      * @param Join $join
@@ -69,22 +59,6 @@ class Select extends AbstractAction
     public function addSorting(EntityAttribute $attribute, string $direction): void
     {
         $this->sorting[] = [$attribute, $direction];
-    }
-
-    /**
-     * @param string $searchString
-     */
-    public function addSearchString(string $searchString): void
-    {
-        $this->searchString = $searchString;
-    }
-
-    /**
-     * @param string $nestedFilter
-     */
-    public function addNestedFilter(string $nestedFilter): void
-    {
-        $this->nestedFilter = $nestedFilter;
     }
 
     /**
@@ -111,110 +85,61 @@ class Select extends AbstractAction
      */
     public function getSqlQuery(): string
     {
-        return join(' ', array_filter($this->getSqlChunks()));
-    }
+        $subQuery = $this->createSqlQuery(
+            [
+                'SELECT',
+                sprintf('_%d.id', $this->baseEntityId),
+                'FROM',
+                sprintf('entity_values AS _%d', $this->baseEntityId),
+                $this->buildJoins(),
+                $this->buildWhere($this->baseEntityId),
+                $this->buildGroupBy(),
+                sprintf('LIMIT %d', $this->limit),
+                sprintf('OFFSET %d', $this->offset),
+            ]
+        );
 
-    /**
-     * @return array
-     * @throws AttributeException
-     * @throws InputTypeException
-     * @throws TypeCastException
-     */
-    protected function getSqlChunks(): array
-    {
-        $subQuery = $this->buildWhereSubQuery();
-        $returning = $this->buildReturning();
-
-        $where = sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery);
-
-        if (!empty($this->searchString)) {
-            $search = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
-            $where .= " AND $search";
-        }
-
-        if (!empty($this->nestedFilter)) {
-            $where .= " AND {$this->nestedFilter}";
-        }
-
-        $chunks = [
+        $sql = $this->createSqlQuery([
             'SELECT',
-            $returning,
+            $this->buildReturning(),
             'FROM',
             sprintf('entity_values AS _%d', $this->baseEntityId),
             $this->buildJoins(),
-            $where,
+            sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery),
             $this->buildGroupBy(),
             $this->buildSorting(),
-        ];
+        ]);
 
-        return $chunks;
+        return $this->prepareSqlQuery($sql);
     }
 
     /**
-     * @param array $columns
-     * @param string $searchString
+     * @param array $chunks
      * @return string
      */
-    private function buildSearchCondition(array $columns, string $searchString): string
+    protected function createSqlQuery(array $chunks = []): string
     {
-        $columns = array_map(
-            function ($column) {
-                return $column->columnId . '::text';
-            },
-            $columns
-        );
-
-        $columns = implode(',', $columns);
-        $searchString = strtolower($searchString);
-
-        return "LOWER(concat_ws(' ', $columns)) LIKE '%$searchString%'";
+        return join(' ', array_filter($chunks));
     }
 
     /**
+     * @param string $sql
      * @return string
-     * @throws InputTypeException
-     * @throws TypeCastException
      */
-    public function buildWhereSubQuery(): string
+    protected function prepareSqlQuery(string $sql): string
     {
-        return join(
-            ' ',
-            array_filter(
-                [
-                    'SELECT',
-                    'id',
-                    'FROM',
-                    sprintf('entity_values AS _%d', $this->baseEntityId),
-                    $this->buildWhere($this->baseEntityId),
-                    $this->buildLimit(),
-                    $this->buildOffset()
-                ]
+        return strtr(
+            $sql,
+            array_map(
+                function ($value) {
+                    if (is_bool($value)) {
+                        return (int)$value;
+                    }
+                    return $value;
+                },
+                $this->getUserInputBindings()
             )
         );
-    }
-
-    /**
-     * @return string
-     */
-    private function buildLimit(): string
-    {
-        if ($this->limit > 0) {
-            return 'LIMIT ' . $this->limit;
-        }
-
-        return '';
-    }
-
-    /**
-     * @return string
-     */
-    private function buildOffset(): string
-    {
-        if ($this->offset > 0) {
-            return 'OFFSET ' . $this->offset;
-        }
-
-        return '';
     }
 
     /**

@@ -27,11 +27,19 @@ class SelectTotal extends Select
      */
     public function getSqlQuery(): string
     {
-        $chunks = parent::getSqlChunks();
+        $sql = $this->createSqlQuery(
+            [
+                'SELECT',
+                sprintf('COUNT(_%d.id) as total', $this->baseEntityId),
+                'FROM',
+                sprintf('entity_values AS _%d', $this->baseEntityId),
+                $this->buildJoins(),
+                $this->buildWhere($this->baseEntityId),
+                $this->buildGroupBy(),
+            ]
+        );
 
-        $chunks[1] = 'COUNT(*) as total';
-
-        return join(' ', array_filter($chunks));
+        return $this->prepareSqlQuery($sql);
     }
 
 }
