@@ -42,6 +42,10 @@ class Select extends AbstractAction
      */
     private int $offset = 0;
 
+    /**
+     * @var string
+     */
+    private string $searchString = '';
 
     /**
      * @param Join $join
@@ -59,6 +63,14 @@ class Select extends AbstractAction
     public function addSorting(EntityAttribute $attribute, string $direction): void
     {
         $this->sorting[] = [$attribute, $direction];
+    }
+
+    /**
+     * @param string $searchString
+     */
+    public function addSearchString(string $searchString): void
+    {
+        $this->searchString = $searchString;
     }
 
     /**
@@ -85,32 +97,62 @@ class Select extends AbstractAction
      */
     public function getSqlQuery(): string
     {
-        $subQuery = $this->createSqlQuery(
-            [
-                'SELECT',
-                sprintf('_%d.id', $this->baseEntityId),
-                'FROM',
-                sprintf('entity_values AS _%d', $this->baseEntityId),
-                $this->buildJoins(),
-                $this->buildWhere($this->baseEntityId),
-                $this->buildGroupBy(),
-                sprintf('LIMIT %d', $this->limit),
-                sprintf('OFFSET %d', $this->offset),
-            ]
-        );
+        $returning = $this->buildReturning();
+        $where = $this->buildWhere($this->baseEntityId);
 
-        $sql = $this->createSqlQuery([
+//        if (!empty($this->searchString)) {
+//            $search = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
+//            $where .= " AND $search";
+//        }
+
+        $chunks = [
             'SELECT',
-            $this->buildReturning(),
+            sprintf('_%d.id', $this->baseEntityId),
             'FROM',
             sprintf('entity_values AS _%d', $this->baseEntityId),
             $this->buildJoins(),
-            sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery),
+            $where,
             $this->buildGroupBy(),
-            $this->buildSorting(),
-        ]);
+            sprintf('LIMIT %d', $this->limit),
+            sprintf('OFFSET %d', $this->offset),
+        ];
+
+        $subQuery = $this->createSqlQuery($chunks);
+
+        $sql = $this->createSqlQuery(
+            [
+                'SELECT',
+                $returning,
+                'FROM',
+                sprintf('entity_values AS _%d', $this->baseEntityId),
+                $this->buildJoins(),
+                sprintf('WHERE _%d.id IN (%s)', $this->baseEntityId, $subQuery),
+                $this->buildGroupBy(),
+                $this->buildSorting(),
+            ]
+        );
 
         return $this->prepareSqlQuery($sql);
+    }
+
+    /**
+     * @param array $columns
+     * @param string $searchString
+     * @return string
+     */
+    private function buildSearchCondition(array $columns, string $searchString): string
+    {
+        $columns = array_map(
+            function ($column) {
+                return $column->columnId . '::text';
+            },
+            $columns
+        );
+
+        $columns = implode(',', $columns);
+        $searchString = strtolower($searchString);
+
+        return "LOWER(concat_ws(' ', $columns)) LIKE '%$searchString%'";
     }
 
     /**
