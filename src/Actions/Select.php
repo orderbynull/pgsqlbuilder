@@ -112,10 +112,16 @@ class Select extends AbstractAction
             sprintf('entity_values AS _%d', $this->baseEntityId),
             $this->buildJoins(),
             $where,
-            $this->buildGroupBy(),
-            sprintf('LIMIT %d', $this->limit),
-            sprintf('OFFSET %d', $this->offset),
+            $this->buildGroupBy()
         ];
+
+        if($this->limit){
+            $chunks[] = sprintf('LIMIT %d', $this->limit);
+        }
+
+        if ($this->offset){
+            $chunks[] = sprintf('OFFSET %d', $this->offset);
+        }
 
         $subQuery = $this->createSqlQuery($chunks);
 
