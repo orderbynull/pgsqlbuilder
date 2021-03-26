@@ -113,7 +113,6 @@ class Select extends AbstractAction
             $this->buildJoins(),
             $where,
             $this->buildGroupBy(),
-            sprintf('ORDER BY _%d.id', $this->baseEntityId)
         ];
 
         if($this->limit){
@@ -125,7 +124,7 @@ class Select extends AbstractAction
         }
 
         $subQuery = $this->createSqlQuery($chunks);
-        
+
         $sql = $this->createSqlQuery(
             [
                 'SELECT',
@@ -254,7 +253,7 @@ class Select extends AbstractAction
             );
         }
 
-        $default = sprintf('ORDER BY _%d.id', $this->baseEntityId);
+        $default = sprintf('ORDER BY _%d.id ASC', $this->baseEntityId);
 
         return count($chunks) ? sprintf('ORDER BY %s', join(',', $chunks)) : $default;
     }
