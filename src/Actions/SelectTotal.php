@@ -27,6 +27,17 @@ class SelectTotal extends Select
      */
     public function getSqlQuery(): string
     {
+        $returning = $this->buildReturning();
+        $where = $this->buildWhere($this->baseEntityId);
+
+        if (!empty($this->searchString)) {
+            $condition = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
+
+            if ($condition) {
+                $where .= ' AND ' . $condition;
+            }
+        }
+
         $sql = $this->createSqlQuery(
             [
                 'SELECT',
@@ -34,7 +45,7 @@ class SelectTotal extends Select
                 'FROM',
                 sprintf('entity_values AS _%d', $this->baseEntityId),
                 $this->buildJoins(),
-                $this->buildWhere($this->baseEntityId),
+                $where,
                 $this->buildGroupBy(),
             ]
         );

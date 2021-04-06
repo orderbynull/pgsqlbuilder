@@ -12,6 +12,7 @@ use Orderbynull\PgSqlBuilder\Exceptions\TypeCastException;
 use Orderbynull\PgSqlBuilder\Traits\ReturningAwareTrait;
 use Orderbynull\PgSqlBuilder\Traits\WhereAwareTrait;
 use Orderbynull\PgSqlBuilder\Utils\Type;
+use Porto\Containers\EAV\Enums\EntityAttributeTypeEnum;
 
 /**
  * Class Select
@@ -45,7 +46,7 @@ class Select extends AbstractAction
     /**
      * @var string
      */
-    private string $searchString = '';
+    protected string $searchString = '';
 
     /**
      * @param Join $join
@@ -100,10 +101,13 @@ class Select extends AbstractAction
         $returning = $this->buildReturning();
         $where = $this->buildWhere($this->baseEntityId);
 
-//        if (!empty($this->searchString)) {
-//            $search = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
-//            $where .= " AND $search";
-//        }
+        if (!empty($this->searchString)) {
+            $condition = $this->buildSearchCondition($this->getResultColumnsMeta(), $this->searchString);
+
+            if ($condition) {
+                $where .= ' AND ' . $condition;
+            }
+        }
 
         $chunks = [
             'SELECT',
@@ -115,11 +119,11 @@ class Select extends AbstractAction
             $this->buildGroupBy(),
         ];
 
-        if($this->limit){
+        if ($this->limit) {
             $chunks[] = sprintf('LIMIT %d', $this->limit);
         }
 
-        if ($this->offset){
+        if ($this->offset) {
             $chunks[] = sprintf('OFFSET %d', $this->offset);
         }
 
@@ -144,21 +148,27 @@ class Select extends AbstractAction
     /**
      * @param array $columns
      * @param string $searchString
-     * @return string
+     * @return string|null
      */
-    private function buildSearchCondition(array $columns, string $searchString): string
+    protected function buildSearchCondition(array $columns, string $searchString): ?string
     {
-        $columns = array_map(
-            function ($column) {
-                return $column->columnId . '::text';
-            },
-            $columns
-        );
-
-        $columns = implode(',', $columns);
+        $attrs = [];
         $searchString = strtolower($searchString);
 
-        return "LOWER(concat_ws(' ', $columns)) LIKE '%$searchString%'";
+        $prefix = sprintf('_%d.attributes->', $this->baseEntityId);
+        $postfix = '->>\'value\' ';
+
+        foreach ($columns as $column) {
+            if ($column->attribute->attributeType === EntityAttributeTypeEnum::FOREIGN_KEY) {
+                continue;
+            }
+
+            $attrs[] = '(' . $prefix . "'$column->columnId'" . $postfix . ')::text' . " LIKE '%$this->searchString%'";
+        }
+
+        if (count($attrs)) {
+            return '(' . implode(' OR ', $attrs) . ')';
+        }
     }
 
     /**
