@@ -49,6 +49,16 @@ class Select extends AbstractAction
     protected string $searchString = '';
 
     /**
+     * @var bool
+     */
+    private bool $useCustomOrderBy = false;
+
+    /**
+     * @var string
+     */
+    private string $customOrderBy = '';
+
+    /**
      * @param Join $join
      * @return $this|void
      */
@@ -263,9 +273,15 @@ class Select extends AbstractAction
             );
         }
 
-        $default = sprintf('ORDER BY _%d.id ASC', $this->baseEntityId);
+        if (count($chunks)) {
+            return sprintf('ORDER BY %s', join(',', $chunks));
+        }
 
-        return count($chunks) ? sprintf('ORDER BY %s', join(',', $chunks)) : $default;
+        if ($this->useCustomOrderBy === true) {
+            return "ORDER BY {$this->customOrderBy} ASC";
+        }
+
+        return sprintf("ORDER BY _%d.id ASC", $this->baseEntityId);
     }
 
     /**
@@ -282,5 +298,16 @@ class Select extends AbstractAction
     public function getResultColumnsMeta(): array
     {
         return $this->getReturningColumnsMeta();
+    }
+
+    /**
+     * @param string $orderBy
+     * @return void
+     */
+    protected function setCustomOrderBy(string $orderBy): void
+    {
+        $this->useCustomOrderBy = true;
+
+        $this->customOrderBy = $orderBy;
     }
 }

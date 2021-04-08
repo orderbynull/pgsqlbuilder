@@ -125,6 +125,8 @@ trait ReturningAwareTrait
                             )
                         );
                     }
+
+                    $this->setCustomOrderBy('row_id');
                     $chunks[0] = '1 AS row_id';
                     $chunks[] = sprintf('%s(%s) AS %s', $attributeAggFunction, $this->columnExpression($attribute), $attributeAlias);
                     $this->registerReturningAttribute(new ResultColumnMeta($attributeAlias, $attribute, $attributeAggFunction));
@@ -244,4 +246,10 @@ trait ReturningAwareTrait
     {
         return array_values($this->returningColumnsMeta);
     }
+
+    /**
+     * @param string $orderBy
+     * @return void
+     */
+    abstract protected function setCustomOrderBy(string $orderBy): void;
 }
