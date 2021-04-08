@@ -163,7 +163,7 @@ class Select extends AbstractAction
                 continue;
             }
 
-            $attrs[] = '(' . $prefix . "'$column->columnId'" . $postfix . ')::text' . " LIKE '%$this->searchString%'";
+            $attrs[] = '(' . $prefix . "'{$column->attribute->attributeId}'" . $postfix . ')::text' . " ILIKE '%$this->searchString%'";
         }
 
         if (count($attrs)) {
