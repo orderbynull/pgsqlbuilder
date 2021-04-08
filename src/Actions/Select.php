@@ -281,7 +281,7 @@ class Select extends AbstractAction
             return "ORDER BY {$this->customOrderBy} ASC";
         }
 
-        $default = sprintf("ORDER BY _%d.id ASC", $this->baseEntityId);
+        return sprintf("ORDER BY _%d.id ASC", $this->baseEntityId);
     }
 
     /**
